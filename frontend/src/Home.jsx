@@ -510,24 +510,51 @@ const handleForgotResetPassword = async (e) => {
 
       {/* Hero Section */}
       <section className="relative mx-auto max-w-6xl px-6 py-24 text-center">
-        <motion.h2
-          initial={{ opacity: 0, y: 60 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1 }}
-          className="mb-6 text-4xl font-extrabold leading-tight tracking-tight text-slate-950 md:text-6xl"
-        >
-          Public Grievance Redressal
-          <span className="block text-teal-800">for Accountable Civic Services</span>
-        </motion.h2>
-        <motion.p
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 1 }}
-          className="mx-auto mb-10 max-w-3xl text-lg text-slate-600 md:text-xl"
-        >
-          A Government of India public service platform for registering civic grievances,
-          tracking departmental action, and improving resolution transparency.
-        </motion.p>
+          <motion.h2
+            initial={{ opacity: 0, y: 60 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1 }}
+            className="mb-6 text-4xl font-extrabold leading-tight tracking-tight text-slate-950 md:text-6xl"
+          >
+            Public Grievance Redressal
+            <span className="block text-teal-800">for Accountable Civic Services</span>
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 1 }}
+            className="mx-auto mb-10 max-w-3xl text-lg text-slate-600 md:text-xl"
+          >
+            A Government of India public service platform for registering civic grievances,
+            tracking departmental action, and improving resolution transparency.
+          </motion.p>
+
+          {/* Blockchain Trust Banner */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.7 }}
+            className="mx-auto mb-10 max-w-2xl flex flex-wrap items-center justify-center gap-3 text-sm"
+          >
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50/70 px-3 py-1.5 font-semibold text-emerald-800">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+              </svg>
+              Blockchain-Verified Governance
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/60 px-3 py-1.5 font-semibold text-slate-700">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg>
+              Immutable Complaint Audit Trail
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/60 px-3 py-1.5 font-semibold text-slate-700">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+              </svg>
+              Tamper-Resistant Records
+            </span>
+          </motion.div>
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -819,6 +846,13 @@ const handleForgotResetPassword = async (e) => {
   {/* Bottom Bar */}
   <div className="mt-12 py-6 border-t border-slate-800 text-center text-sm text-slate-400">
     © {new Date().getFullYear()} Government of India Public Grievance Resolution Portal.
+    <span className="mx-2 opacity-50">|</span>
+    <span className="inline-flex items-center gap-1">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      </svg>
+      Secured by ICP Blockchain
+    </span>
   </div>
 </motion.footer>
 

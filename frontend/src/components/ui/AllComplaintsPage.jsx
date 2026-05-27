@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { jsPDF } from "jspdf";
 import { apiUrl, formatDate, getStoredUser, normalizeStatus, statusClassName } from "../../lib/api";
 import { fetchComplaintAuditTrail, fetchVerificationBatch } from "../../lib/blockchain";
+import BlockchainBadge, { AuditTimeline } from "./BlockchainBadge";
 
 
 const AllComplaintsPage = () => {
@@ -407,84 +408,61 @@ const AllComplaintsPage = () => {
       )}*/}
 
       {isViewOpen && selectedComplaint && (
-  <div
-    className="modal-backdrop"
-    onClick={() => setIsViewOpen(false)}
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="all-complaint-details-title"
-  >
-    <div
-      className="modal-shell w-full max-w-4xl h-[85vh] relative overflow-y-auto p-6"
-      onClick={(e) => e.stopPropagation()}
-    >
-      {/* Close button */}
-      <button
-        className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-xl"
-        onClick={() => setIsViewOpen(false)}
-        aria-label="Close complaint details"
-      >
-        ✕
-      </button>
+        <div className="modal-backdrop" onClick={() => setIsViewOpen(false)} role="dialog" aria-modal="true" aria-labelledby="all-complaint-details-title">
+          <div className="modal-shell w-full max-w-4xl h-[85vh] relative overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
+            <button className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-xl" onClick={() => setIsViewOpen(false)} aria-label="Close complaint details">✕</button>
 
-      {/* Complaint Details */}
-      <h2 id="all-complaint-details-title" className="text-3xl font-bold text-teal-900 mb-4">
-        Grievance #{selectedComplaint.id}: {selectedComplaint.category}
-      </h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 id="all-complaint-details-title" className="text-3xl font-bold text-slate-900">
+                Grievance #{selectedComplaint.id}: {selectedComplaint.category}
+              </h2>
+              <BlockchainBadge 
+                verified={verificationMap[selectedComplaint.id]?.verified} 
+                size="lg" 
+              />
+            </div>
 
-      <div className="space-y-3">
-        <p>
-          <strong>Blockchain Verification:</strong>{" "}
-          {!verificationMap[selectedComplaint.id] ? (
-            <span className="font-semibold text-slate-700">Checking...</span>
-          ) : verificationMap[selectedComplaint.id]?.verified ? (
-            <span className="font-semibold text-emerald-700">Blockchain Verified</span>
-          ) : (
-            <span className="font-semibold text-amber-700">Verification Failed</span>
-          )}
-        </p>
-        <p><strong>Description:</strong> {selectedComplaint.description}</p>
-        <p><strong>Location:</strong> {selectedComplaint.location}</p>
-        <p><strong>Status:</strong> {normalizeStatus(selectedComplaint.status)}</p>
-        <p><strong>Priority:</strong> {selectedComplaint.priority}</p>
-        <p><strong>Reported by:</strong> {selectedComplaint.citizen}</p>
-        <p><strong>Date:</strong> {selectedComplaint.date}</p>
-        {selectedComplaint.solution && (
-          <p><strong>Solution:</strong> {selectedComplaint.solution}</p>
-        )}
-      </div>
+            <div className="details-grid mb-6">
+              <p><strong>Description:</strong> {selectedComplaint.description}</p>
+              <p><strong>Location:</strong> {selectedComplaint.location}</p>
+              <p><strong>Status:</strong> {normalizeStatus(selectedComplaint.status)}</p>
+              <p><strong>Priority:</strong> {selectedComplaint.priority}</p>
+              <p><strong>Reported by:</strong> {selectedComplaint.citizen}</p>
+              <p><strong>Date:</strong> {selectedComplaint.date}</p>
+              {selectedComplaint.solution && <p><strong>Solution:</strong> {selectedComplaint.solution}</p>}
+            </div>
 
-      <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
-        <h3 className="mb-3 text-lg font-semibold text-teal-900">Immutable Event History</h3>
-        {loadingAudit ? (
-          <p className="text-sm text-slate-500">Loading audit trail...</p>
-        ) : auditTrail.length > 0 ? (
-          <ul className="space-y-2 text-sm text-slate-700">
-            {auditTrail.map((entry) => (
-              <li key={entry.eventId} className="rounded-md border border-slate-200 bg-white px-3 py-2">
-                <strong>{entry.action}</strong> by {entry.actor} on{" "}
-                {entry.timestamp ? new Date(entry.timestamp).toLocaleString() : "Unknown time"}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-sm text-slate-500">No blockchain audit events available yet.</p>
-        )}
-      </div>
+            <div className="rounded-xl border border-slate-200 bg-white p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-slate-900">Immutable Audit Trail</h3>
+                {verificationMap[selectedComplaint.id]?.verified && (
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                    </svg>
+                    ICP CONFIRMED
+                  </span>
+                )}
+              </div>
+              <AuditTimeline events={auditTrail} loading={loadingAudit} />
+              {verificationMap[selectedComplaint.id]?.verified && (
+                <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-2 gap-3 text-xs text-slate-500">
+                  {verificationMap[selectedComplaint.id]?.blockId && <p><strong>Block ID:</strong> {verificationMap[selectedComplaint.id].blockId}</p>}
+                  {verificationMap[selectedComplaint.id]?.timestamp && <p><strong>Verified At:</strong> {new Date(verificationMap[selectedComplaint.id].timestamp).toLocaleString()}</p>}
+                  {verificationMap[selectedComplaint.id]?.canisterId && <p><strong>Canister:</strong> {verificationMap[selectedComplaint.id].canisterId}</p>}
+                  {verificationMap[selectedComplaint.id]?.txRef && <p><strong>Tx Ref:</strong> {verificationMap[selectedComplaint.id].txRef}</p>}
+                </div>
+              )}
+            </div>
 
-      {/* Image below text */}
-      {selectedComplaint.photo && (
-        <div className="mt-6 flex justify-center">
-          <img
-            src={apiUrl(selectedComplaint.photo)}
-            alt={selectedComplaint.category}
-            className="max-w-full max-h-[400px] rounded-lg shadow-md object-contain"
-          />
+            {selectedComplaint.photo && (
+              <div className="mt-6 flex justify-center">
+                <img src={apiUrl(selectedComplaint.photo)} alt={selectedComplaint.category} className="max-w-full max-h-[400px] rounded-lg shadow-md object-contain" />
+              </div>
+            )}
+          </div>
         </div>
       )}
-    </div>
-  </div>
-)}
 
 
 
