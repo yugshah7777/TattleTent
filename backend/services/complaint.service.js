@@ -1,6 +1,8 @@
 
 import pool from '../db/db.js';
 import { notifyAdminForManualReassignment } from './notification.service.js';
+import { queueAuditEvent } from './icp.service.js';
+import { queueComplaintVerificationSync } from './complaintProof.service.js';
 
 const getMaxEscalations = (priority) => {
   if (priority === "High") return 3;
@@ -58,6 +60,27 @@ export const saveComplaintToDB = async (newComplaint) => {
     console.error("❌ Error saving complaint:", err.message);
     throw err;
   }
+};
+
+export const getComplaintLifecycleContext = async (id) => {
+  const result = await pool.query(
+    `SELECT
+      c.complaint_id,
+      c.status,
+      c.priority,
+      c.staff_id,
+      c.assigned_to,
+      c.submitted_at,
+      c.updated_at,
+      d.dept_name AS department
+    FROM complaints c
+    LEFT JOIN departments d ON c.dept_id = d.dept_id
+    WHERE c.complaint_id = $1
+    LIMIT 1`,
+    [id]
+  );
+
+  return result.rowCount > 0 ? result.rows[0] : null;
 };
 
 // ✅ Update complaint (Revised to fix specific bugs)
@@ -371,6 +394,8 @@ export const escalateComplaintsByCategory = async () => {
     const escalatedComplaints = [];
 
     for (const c of overdue.rows) {
+      const previousPriority = c.priority;
+      const previousStatus = c.status;
       const newSlaDeadline = await calculateSlaDeadline(c.dept_id, c.priority);
 
 
@@ -397,6 +422,19 @@ export const escalateComplaintsByCategory = async () => {
         }
 
       escalatedComplaints.push({ complaint_id: c.complaint_id });
+      queueAuditEvent({
+        complaintId: c.complaint_id,
+        action: "SLA_ESCALATION_TRIGGERED",
+        actor: "SYSTEM_ESCALATION_JOB",
+        oldValue: previousPriority,
+        newValue: c.priority === "Low" ? "Medium" : "High",
+        department: String(c.dept_id),
+        metadataHash: `${c.complaint_id}:${previousPriority}->${c.priority === "Low" ? "Medium" : "High"}`,
+        timestamp: new Date(),
+      });
+      queueComplaintVerificationSync(c.complaint_id).catch((error) => {
+        console.error("ICP verification sync failed after escalation:", error.message);
+      });
       }
       else{
         if (c.staff_id) {
@@ -419,6 +457,19 @@ export const escalateComplaintsByCategory = async () => {
           `,[newSlaDeadline,3,c.complaint_id]);
 
         escalatedComplaints.push({ complaint_id: c.complaint_id});
+        queueAuditEvent({
+          complaintId: c.complaint_id,
+          action: "SLA_ESCALATION_TRIGGERED",
+          actor: "SYSTEM_ESCALATION_JOB",
+          oldValue: previousStatus,
+          newValue: "New",
+          department: String(c.dept_id),
+          metadataHash: `${c.complaint_id}:${previousPriority}:RESET`,
+          timestamp: new Date(),
+        });
+        queueComplaintVerificationSync(c.complaint_id).catch((error) => {
+          console.error("ICP verification sync failed after escalation reset:", error.message);
+        });
 
         notifyAdminForManualReassignment(c.complaint_id);
       }

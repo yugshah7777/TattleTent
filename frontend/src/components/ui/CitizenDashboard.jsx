@@ -13,6 +13,7 @@ import {
   normalizeStatus,
   statusClassName,
 } from "../../lib/api";
+import { fetchComplaintAuditTrail, fetchComplaintVerification } from "../../lib/blockchain";
 
 const CitizenDashboard = () => {
   const [isSubmitOpen, setIsSubmitOpen] = useState(false);
@@ -29,10 +30,28 @@ const [menuOpen, setMenuOpen] = useState(false);
   const [isSubmittingComplaint, setIsSubmittingComplaint] = useState(false);
   const [notice, setNotice] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [auditTrail, setAuditTrail] = useState([]);
+  const [verificationRecord, setVerificationRecord] = useState(null);
+  const [isLoadingAuditTrail, setIsLoadingAuditTrail] = useState(false);
 
-   const handleDetails = (complaint) => {
+   const handleDetails = async (complaint) => {
     setSelectedComplaint(complaint);
     setIsViewOpen(true);
+    setIsLoadingAuditTrail(true);
+    try {
+      const [trail, verification] = await Promise.all([
+        fetchComplaintAuditTrail(complaint.id),
+        fetchComplaintVerification(complaint.id),
+      ]);
+      setAuditTrail(trail);
+      setVerificationRecord(verification);
+    } catch (error) {
+      console.error("Unable to load blockchain details:", error);
+      setAuditTrail([]);
+      setVerificationRecord(null);
+    } finally {
+      setIsLoadingAuditTrail(false);
+    }
   };
 
   const fetchComplaintsByUser = async () => {
@@ -613,6 +632,14 @@ useEffect(() => {
       </h2>
 
       <div className="space-y-3">
+        <p>
+          <strong>Verified Audit Trail:</strong>{" "}
+          {verificationRecord?.verified ? (
+            <span className="font-semibold text-emerald-700">Blockchain Verified</span>
+          ) : (
+            <span className="font-semibold text-amber-700">Verification Failed</span>
+          )}
+        </p>
         <p><strong>Title:</strong> {selectedComplaint.title}</p>
         <p><strong>Description:</strong> {selectedComplaint.description}</p>
         <p><strong>Location:</strong> {selectedComplaint.location}</p>
@@ -621,6 +648,24 @@ useEffect(() => {
         <p><strong>Assigned To:</strong> {selectedComplaint.assignedTo}</p>
         <p><strong>Submit Date:</strong> {selectedComplaint.subdate}</p>
         <p><strong>Last Update:</strong> {selectedComplaint.update}</p>
+      </div>
+
+      <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <h3 className="mb-3 text-lg font-semibold text-teal-900">Immutable Event History</h3>
+        {isLoadingAuditTrail ? (
+          <p className="text-sm text-slate-500">Loading audit trail...</p>
+        ) : auditTrail.length > 0 ? (
+          <ul className="space-y-2 text-sm text-slate-700">
+            {auditTrail.map((entry) => (
+              <li key={entry.eventId} className="rounded-md border border-slate-200 bg-white px-3 py-2">
+                <strong>{entry.action}</strong> by {entry.actor} on{" "}
+                {entry.timestamp ? new Date(entry.timestamp).toLocaleString() : "Unknown time"}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-slate-500">No blockchain audit entries available.</p>
+        )}
       </div>
 
       {/* Image below text */}

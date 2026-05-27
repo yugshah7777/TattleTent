@@ -2,3 +2,24 @@ node_modules/
 .env
 *.log
 __pycache__/
+backend/icp/.dfx/
+backend/icp/canister_ids.json
+backend/icp/.env
+frontend/dist/
+
+# Environment files (should never be committed)
+backend/.env
+backend/.env.local
+frontend/.env
+frontend/.env.local
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db

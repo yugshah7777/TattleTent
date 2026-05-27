@@ -15,6 +15,7 @@ const Heatmap = lazy(() => import("./components/ui/Heatmap"));
 const FeedbackPage = lazy(() => import("./components/ui/FeedbackPage"));
 const AdminInviteStaff = lazy(() => import("./components/ui/AdminInviteStaff"));
 const StaffPasswordChange = lazy(() => import("./components/ui/StaffPasswordChange"));
+const IcpDiagnosticsPage = lazy(() => import("./components/ui/IcpDiagnosticsPage"));
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
@@ -33,6 +34,7 @@ createRoot(document.getElementById("root")).render(
           <Route path="/feedback-page" element={<FeedbackPage />} />
           <Route path="/invite-staff" element={<AdminInviteStaff />} />
           <Route path="/staff-password-change" element={<StaffPasswordChange />} />
+          <Route path="/icp-diagnostics" element={<IcpDiagnosticsPage />} />
         </Routes>
       </Suspense>
     </BrowserRouter>

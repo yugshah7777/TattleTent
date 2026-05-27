@@ -8,13 +8,34 @@ import {
   getComplaintCounts,
   searchComplaints,
   escalateComplaintsByCategory,
-  fetchHeatmapData 
+  fetchHeatmapData,
+  getComplaintLifecycleContext,
 } from "../services/complaint.service.js";
 
 import { notifyStatusChange } from "../services/notification.service.js";
+import {
+  queueAuditEvent,
+  getComplaintAuditTrailFromIcp,
+  getIcpDiagnostics,
+} from "../services/icp.service.js";
+import {
+  queueComplaintVerificationSync,
+  verifyComplaintAgainstBlockchain,
+} from "../services/complaintProof.service.js";
 
-const VALID_STATUSES = new Set(["New", "IN_PROGRESS", "In Progress", "Resolved"]);
+const VALID_STATUSES = new Set(["New", "IN_PROGRESS", "In Progress", "Resolved", "Closed"]);
 const VALID_PRIORITIES = new Set(["Low", "Medium", "High"]);
+
+// Canonical mapping that works bidirectionally
+const CANONICAL_STATUS_MAP = {
+  "In Progress": "IN_PROGRESS",
+  "IN_PROGRESS": "IN_PROGRESS",
+};
+
+const normalizeLifecycleStatus = (status) => {
+  if (!status) return status;
+  return CANONICAL_STATUS_MAP[status] || status;
+};
 
 // ✅ Create a new complaint
 const createComplaint = asynchandler(async (req, res) => {
@@ -44,6 +65,19 @@ const createComplaint = asynchandler(async (req, res) => {
 
   // Save complaint 
   const savedComplaint = await saveComplaintToDB(newComplaint);
+  queueAuditEvent({
+    complaintId: savedComplaint.complaint_id,
+    action: "COMPLAINT_CREATED",
+    actor: `USER_${user_id}`,
+    oldValue: null,
+    newValue: savedComplaint.status,
+    department: category,
+    metadataHash: `${savedComplaint.complaint_id}:CREATED`,
+    timestamp: new Date(),
+  });
+  queueComplaintVerificationSync(savedComplaint.complaint_id).catch((error) => {
+    console.error("ICP verification sync failed after create:", error.message);
+  });
 
   return res
     .status(201)
@@ -78,6 +112,7 @@ const updateComplaintStatus = asynchandler(async (req, res) => {
       return res.status(400).json(new ApiResponse(400, "Invalid complaint priority."));
   }
 
+  const beforeUpdate = await getComplaintLifecycleContext(complaintId);
   const updatedComplaint = await updateComplaintStatusInDB(complaintId, status, staffId, priority);
 
   if (!updatedComplaint)
@@ -86,6 +121,76 @@ const updateComplaintStatus = asynchandler(async (req, res) => {
       .json(new ApiResponse(404, "Complaint not found"));
 
   notifyStatusChange(complaintId);
+  const oldStatus = normalizeLifecycleStatus(beforeUpdate?.status || null);
+  const newStatus = normalizeLifecycleStatus(updatedComplaint.status || status);
+  const actorId = req.user?.user_id ? `USER_${req.user.user_id}` : "SYSTEM";
+
+  queueAuditEvent({
+    complaintId,
+    action: "STATUS_UPDATED",
+    actor: actorId,
+    oldValue: oldStatus,
+    newValue: newStatus,
+    department: beforeUpdate?.department || null,
+    metadataHash: `${complaintId}:${oldStatus || "NA"}->${newStatus || "NA"}`,
+    timestamp: new Date(),
+  });
+
+  if (staffId) {
+    queueAuditEvent({
+      complaintId,
+      action: "DEPARTMENT_ASSIGNED",
+      actor: actorId,
+      oldValue: beforeUpdate?.assigned_to || null,
+      newValue: String(staffId),
+      department: beforeUpdate?.department || null,
+      metadataHash: `${complaintId}:ASSIGNED:${staffId}`,
+      timestamp: new Date(),
+    });
+  }
+
+  if (newStatus === "Resolved") {
+    queueAuditEvent({
+      complaintId,
+      action: "RESOLUTION_SUBMITTED",
+      actor: actorId,
+      oldValue: oldStatus,
+      newValue: newStatus,
+      department: beforeUpdate?.department || null,
+      metadataHash: `${complaintId}:RESOLUTION`,
+      timestamp: new Date(),
+    });
+  }
+
+  if (newStatus === "Closed") {
+    queueAuditEvent({
+      complaintId,
+      action: "COMPLAINT_CLOSED",
+      actor: actorId,
+      oldValue: oldStatus,
+      newValue: newStatus,
+      department: beforeUpdate?.department || null,
+      metadataHash: `${complaintId}:CLOSED`,
+      timestamp: new Date(),
+    });
+  }
+
+  if ((oldStatus === "Resolved" || oldStatus === "Closed") && (newStatus === "New" || newStatus === "IN_PROGRESS")) {
+    queueAuditEvent({
+      complaintId,
+      action: "COMPLAINT_REOPENED",
+      actor: actorId,
+      oldValue: oldStatus,
+      newValue: newStatus,
+      department: beforeUpdate?.department || null,
+      metadataHash: `${complaintId}:REOPENED`,
+      timestamp: new Date(),
+    });
+  }
+
+  queueComplaintVerificationSync(complaintId).catch((error) => {
+    console.error("ICP verification sync failed after status update:", error.message);
+  });
 
   return res
     .status(200)
@@ -216,4 +321,66 @@ const getHeatmapData = async (req, res) => {
   }
 };
 
-export { createComplaint, updateComplaintStatus,updateComplaintPriority, deleteComplaint, fetchComplaintCounts ,getComplaints,escalateComplaints, getHeatmapData};
+const getComplaintAuditTrail = asynchandler(async (req, res) => {
+  const complaintId = Number.parseInt(req.params.id, 10);
+  if (!Number.isInteger(complaintId)) {
+    return res.status(400).json(new ApiResponse(400, "Valid complaint ID is required."));
+  }
+
+  const trail = await getComplaintAuditTrailFromIcp(complaintId);
+  return res.status(200).json(new ApiResponse(200, "Audit trail fetched successfully", trail));
+});
+
+const getComplaintVerification = asynchandler(async (req, res) => {
+  const complaintId = Number.parseInt(req.params.id, 10);
+  if (!Number.isInteger(complaintId)) {
+    return res.status(400).json(new ApiResponse(400, "Valid complaint ID is required."));
+  }
+
+  const verification = await verifyComplaintAgainstBlockchain(complaintId);
+  return res.status(200).json(new ApiResponse(200, "Complaint verification fetched successfully", verification));
+});
+
+const getComplaintVerificationBatch = asynchandler(async (req, res) => {
+  const ids = String(req.query.ids || "")
+    .split(",")
+    .map((value) => Number.parseInt(value.trim(), 10))
+    .filter((value) => Number.isInteger(value));
+
+  if (ids.length === 0) {
+    return res.status(400).json(new ApiResponse(400, "At least one complaint ID is required."));
+  }
+
+  const uniqueIds = Array.from(new Set(ids));
+  const records = await Promise.all(uniqueIds.map((id) => verifyComplaintAgainstBlockchain(id)));
+  const map = records.reduce((acc, entry) => {
+    acc[entry.complaintId] = entry;
+    return acc;
+  }, {});
+
+  return res.status(200).json(new ApiResponse(200, "Verification records fetched successfully", map));
+});
+
+const getIcpDiagnosticsController = asynchandler(async (req, res) => {
+  const diagnostics = getIcpDiagnostics();
+  return res.status(200).json({
+    success: true,
+    message: "ICP diagnostics fetched successfully",
+    data: diagnostics,
+  });
+});
+
+export {
+  createComplaint,
+  updateComplaintStatus,
+  updateComplaintPriority,
+  deleteComplaint,
+  fetchComplaintCounts,
+  getComplaints,
+  escalateComplaints,
+  getHeatmapData,
+  getComplaintAuditTrail,
+  getComplaintVerification,
+  getComplaintVerificationBatch,
+  getIcpDiagnosticsController,
+};

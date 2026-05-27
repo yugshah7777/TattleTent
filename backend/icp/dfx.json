@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "canisters": {
+    "audit_ledger": {
+      "main": "src/audit_ledger/main.mo",
+      "type": "motoko"
+    }
+  },
+  "output_env_file": ".env"
+}

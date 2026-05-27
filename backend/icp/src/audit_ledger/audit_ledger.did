@@ -1,0 +1,59 @@
+type AuditAction = variant {
+  COMPLAINT_CREATED;
+  STATUS_UPDATED;
+  DEPARTMENT_ASSIGNED;
+  SLA_ESCALATION_TRIGGERED;
+  RESOLUTION_SUBMITTED;
+  COMPLAINT_CLOSED;
+  COMPLAINT_REOPENED;
+};
+
+type AuditEventInput = record {
+  complaintId : text;
+  action : AuditAction;
+  actor : text;
+  oldValue : opt text;
+  newValue : opt text;
+  department : opt text;
+  metadataHash : opt text;
+  timestamp : opt nat64;
+};
+
+type AuditEvent = record {
+  eventId : nat64;
+  complaintId : text;
+  action : AuditAction;
+  actor : text;
+  oldValue : opt text;
+  newValue : opt text;
+  department : opt text;
+  metadataHash : opt text;
+  timestamp : nat64;
+};
+
+type VerificationRecordInput = record {
+  complaintId : text;
+  snapshotHash : text;
+  status : text;
+  department : opt text;
+  resolvedAt : opt nat64;
+  metadataHash : opt text;
+  timestamp : opt nat64;
+};
+
+type VerificationRecord = record {
+  complaintId : text;
+  snapshotHash : text;
+  status : text;
+  department : opt text;
+  resolvedAt : opt nat64;
+  metadataHash : opt text;
+  timestamp : nat64;
+};
+
+service : {
+  addAuditEvent : (AuditEventInput) -> (AuditEvent);
+  getComplaintAuditTrail : (text) -> (vec AuditEvent) query;
+  upsertVerificationRecord : (VerificationRecordInput) -> (VerificationRecord);
+  getVerificationRecord : (text) -> (opt VerificationRecord) query;
+};

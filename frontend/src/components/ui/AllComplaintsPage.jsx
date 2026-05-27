@@ -3,6 +3,7 @@ import Logo from './Logo'
 import { useNavigate } from "react-router-dom";
 import { jsPDF } from "jspdf";
 import { apiUrl, formatDate, getStoredUser, normalizeStatus, statusClassName } from "../../lib/api";
+import { fetchComplaintAuditTrail, fetchVerificationBatch } from "../../lib/blockchain";
 
 
 const AllComplaintsPage = () => {
@@ -13,6 +14,9 @@ const AllComplaintsPage = () => {
   const [complaints, setComplaints] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [verificationMap, setVerificationMap] = useState({});
+  const [auditTrail, setAuditTrail] = useState([]);
+  const [loadingAudit, setLoadingAudit] = useState(false);
  /*  const [complaints, setComplaints] = useState([
     { id: 1, category: "Water Leak", location: "Tent #5", status: "Pending", citizen: "John Doe", priority: null, description: "Leak near Tent #5, pipe burst", assignedTo: null },
     { id: 2, category: "Garbage", location: "Central Park", status: "In Progress", citizen: "Mike Johnson", priority: "Low", description: "Overflowing bin near park", assignedTo: "John Doe" },
@@ -93,6 +97,22 @@ const AllComplaintsPage = () => {
   const currentComplaints = filteredComplaints.slice(indexOfFirst, indexOfLast);
   const totalPages = Math.max(1, Math.ceil(filteredComplaints.length / complaintsPerPage));
 
+  useEffect(() => {
+    const loadVerification = async () => {
+      try {
+        const ids = currentComplaints.map((entry) => entry.id);
+        const records = await fetchVerificationBatch(ids);
+        setVerificationMap((prev) => ({ ...prev, ...records }));
+      } catch (error) {
+        console.error("Unable to load verification batch:", error);
+      }
+    };
+
+    if (!isLoading && currentComplaints.length > 0) {
+      loadVerification();
+    }
+  }, [currentComplaints, isLoading]);
+
  /* const handleAssign = (complaint) => setAssignStaff(complaint);
   const confirmAssign = (staffName) => {
     setComplaints(prev => prev.map(c => c.id === assignStaff.id ? { ...c, assignedTo: staffName, status: "In Progress" } : c));
@@ -109,6 +129,25 @@ const AllComplaintsPage = () => {
     setSelectedComplaint(complaint);
     setIsViewOpen(true);
   };
+
+  useEffect(() => {
+    const loadAuditTrail = async () => {
+      if (!selectedComplaint?.id || !isViewOpen) return;
+
+      try {
+        setLoadingAudit(true);
+        const rows = await fetchComplaintAuditTrail(selectedComplaint.id);
+        setAuditTrail(rows);
+      } catch (error) {
+        console.error("Unable to load audit trail:", error);
+        setAuditTrail([]);
+      } finally {
+        setLoadingAudit(false);
+      }
+    };
+
+    loadAuditTrail();
+  }, [isViewOpen, selectedComplaint]);
 
   const exportComplaintPDF = (complaint) => {
   const doc = new jsPDF();
@@ -226,7 +265,7 @@ const AllComplaintsPage = () => {
         <table className="min-w-full divide-y divide-blue-200">
           <thead className="bg-white">
             <tr>
-              {["ID","Category","Location","Status","Date","Priority","Assigned To","View"].map(h=>(
+              {["ID","Category","Location","Status","Date","Priority","Assigned To","Blockchain","View"].map(h=>(
                 <th key={h} className="p-4 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">{h}</th>
               ))}
             </tr>
@@ -234,7 +273,7 @@ const AllComplaintsPage = () => {
           <tbody className="divide-y divide-blue-200 bg-white">
             {isLoading ? (
               <tr>
-                <td colSpan="8" className="text-center p-8 text-gray-500">
+                <td colSpan="9" className="text-center p-8 text-gray-500">
                   Loading grievances...
                 </td>
               </tr>
@@ -251,6 +290,21 @@ const AllComplaintsPage = () => {
                 <td className="p-4">{c.date}</td>
                 <td className="p-4">{c.priority || "Not Set"}</td>
                 <td className="p-4">{c.assignedTo || "Unassigned"}</td>
+                <td className="p-4">
+                  {!verificationMap[c.id] ? (
+                    <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
+                      Checking...
+                    </span>
+                  ) : verificationMap[c.id]?.verified ? (
+                    <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-800">
+                      Blockchain Verified
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800">
+                      Verification Failed
+                    </span>
+                  )}
+                </td>
                 <td className="p-4 flex gap-2">
   <button
     className="btn-primary px-3 py-1.5 text-sm"
@@ -268,7 +322,7 @@ const AllComplaintsPage = () => {
               </tr>
             )) : (
               <tr>
-                <td colSpan="8" className="text-center p-8 text-gray-500">
+                <td colSpan="9" className="text-center p-8 text-gray-500">
                   No grievances match the current filters.
                 </td>
               </tr>
@@ -379,6 +433,16 @@ const AllComplaintsPage = () => {
       </h2>
 
       <div className="space-y-3">
+        <p>
+          <strong>Blockchain Verification:</strong>{" "}
+          {!verificationMap[selectedComplaint.id] ? (
+            <span className="font-semibold text-slate-700">Checking...</span>
+          ) : verificationMap[selectedComplaint.id]?.verified ? (
+            <span className="font-semibold text-emerald-700">Blockchain Verified</span>
+          ) : (
+            <span className="font-semibold text-amber-700">Verification Failed</span>
+          )}
+        </p>
         <p><strong>Description:</strong> {selectedComplaint.description}</p>
         <p><strong>Location:</strong> {selectedComplaint.location}</p>
         <p><strong>Status:</strong> {normalizeStatus(selectedComplaint.status)}</p>
@@ -387,6 +451,24 @@ const AllComplaintsPage = () => {
         <p><strong>Date:</strong> {selectedComplaint.date}</p>
         {selectedComplaint.solution && (
           <p><strong>Solution:</strong> {selectedComplaint.solution}</p>
+        )}
+      </div>
+
+      <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <h3 className="mb-3 text-lg font-semibold text-teal-900">Immutable Event History</h3>
+        {loadingAudit ? (
+          <p className="text-sm text-slate-500">Loading audit trail...</p>
+        ) : auditTrail.length > 0 ? (
+          <ul className="space-y-2 text-sm text-slate-700">
+            {auditTrail.map((entry) => (
+              <li key={entry.eventId} className="rounded-md border border-slate-200 bg-white px-3 py-2">
+                <strong>{entry.action}</strong> by {entry.actor} on{" "}
+                {entry.timestamp ? new Date(entry.timestamp).toLocaleString() : "Unknown time"}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-slate-500">No blockchain audit events available yet.</p>
         )}
       </div>
 

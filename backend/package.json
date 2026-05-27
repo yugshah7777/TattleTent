@@ -8,7 +8,10 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "format:src": "prettier --write src/**/*",
-    "start": "nodemon server.js"
+    "start": "nodemon server.js",
+    "icp:start": "cd icp && dfx start --background",
+    "icp:deploy": "cd icp && dfx deploy",
+    "icp:stop": "cd icp && dfx stop"
   },
   "keywords": [],
   "author": "",
@@ -19,6 +22,7 @@
     "prettier": "^3.6.2"
   },
   "dependencies": {
+    "@icp-sdk/core": "^5.4.0",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",

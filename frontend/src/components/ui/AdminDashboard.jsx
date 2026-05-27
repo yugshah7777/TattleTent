@@ -293,6 +293,12 @@ const AdminDashboard = () => {
       Invite Staff
     </button>
     <button
+      className="btn-secondary"
+      onClick={() => navigate("/icp-diagnostics")}
+    >
+      ICP Diagnostics
+    </button>
+    <button
       className="btn-primary"
       onClick={handleLogout}
     >

@@ -35,3 +35,19 @@
 | Database        | PostgreSQL                     |
 | Authentication  | Google OAuth 2.0, JWT          |
 | Deployment      | Docker, Cloud Hosting           |
+
+---
+
+## ICP Add-On Layer
+
+Primary architecture remains unchanged:
+
+`React -> Express -> PostgreSQL`
+
+ICP/DFINITY is integrated as a verification extension for:
+
+- Immutable complaint audit logs.
+- Blockchain-backed transparency verification hashes.
+
+If local ICP runtime is unavailable, keep `ICP_ENABLED=false` and the app continues operating normally.
+Deploy details are in [backend/icp/README.md](backend/icp/README.md).
