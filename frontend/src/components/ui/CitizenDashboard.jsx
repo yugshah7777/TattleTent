@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import Logo from "./Logo";
 import { useNavigate } from "react-router-dom";
-import { FaBars } from "react-icons/fa";
-import { FiCheckCircle, FiClock, FiDroplet, FiFileText, FiTrash2, FiTool, FiZap } from "react-icons/fi";
+import { FaBars, FaTimes } from "react-icons/fa";
+import { FiCheckCircle, FiClock, FiDroplet, FiFileText, FiTrash2, FiTool, FiZap, FiShield } from "react-icons/fi";
 import axios from "axios";
 import {
   apiUrl,
@@ -96,7 +96,6 @@ useEffect(() => {
   }
   // eslint-disable-next-line react-hooks/exhaustive-deps
 }, [user]);
-// refetch if user changes
 
 
   const fetchCounts = async () => {
@@ -126,10 +125,7 @@ useEffect(() => {
       setNotice("");
       setErrorMessage("");
 
-      // Create a FormData object to handle text + image together
       const formData = new FormData(e.target);
-
-      // Add logged-in user ID automatically
       formData.append("user_id", user.user_id);
 
       let lat = null, lon = null;
@@ -196,79 +192,76 @@ useEffect(() => {
   const displayName = user?.name || "there";
 
   return (
-    <div className="app-shell min-h-screen font-sans">
-      <nav className="premium-nav fixed top-0 left-0 w-full z-50">
-        <div className="flex items-center justify-between h-20 px-6 sm:px-8 lg:px-12">
-          <Logo />
-          <button
-            className="sm:hidden p-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 transition-colors"
-            onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Toggle navigation menu"
-            aria-expanded={menuOpen}
-          >
-            <FaBars size={24} />
-          </button>
-          <div className="hidden sm:flex items-center gap-6">
-            <div className="text-right">
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Logged in as</p>
-              <p className="font-semibold text-slate-900">{user?.name || "Citizen"}</p>
-            </div>
-            <div className="flex gap-3">
-              <button onClick={() => navigate("/all-complaints")} className="btn-secondary">All Grievances</button>
-              <button onClick={handleLogout} className="btn-primary">Logout</button>
-            </div>
+    <div className="min-h-screen flex flex-col">
+      {/* ============ NAVBAR ============ */}
+      <nav className="premium-nav">
+        <Logo />
+        <button
+          className="sm:hidden p-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 transition-colors"
+          onClick={() => setMenuOpen(!menuOpen)}
+          aria-label="Toggle navigation"
+        >
+          {menuOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
+        </button>
+        <div className="hidden sm:flex items-center gap-4">
+          <div className="text-right">
+            <p className="text-xs font-medium text-[var(--goi-muted)] uppercase tracking-wide">Logged in as</p>
+            <p className="font-semibold text-[var(--goi-ink)]">{user?.name || "Citizen"}</p>
           </div>
+          <button onClick={() => navigate("/all-complaints")} className="btn-secondary">All Grievances</button>
+          <button onClick={handleLogout} className="btn-primary">Logout</button>
         </div>
-        {menuOpen && (
-          <div className="sm:hidden border-t border-slate-200 bg-white/95 backdrop-blur animate-fade-in">
-            <div className="flex flex-col items-center gap-4 py-6 px-4">
-              <div className="text-center">
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Logged in as</p>
-                <p className="font-semibold text-slate-900">{user?.name || "Citizen"}</p>
-              </div>
-              <button onClick={() => { navigate("/all-complaints"); setMenuOpen(false); }} className="btn-secondary w-full justify-center">All Grievances</button>
-              <button onClick={() => { handleLogout(); setMenuOpen(false); }} className="btn-primary w-full justify-center">Logout</button>
-            </div>
-          </div>
-        )}
       </nav>
 
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-12 max-w-7xl pt-32">
-        <section className="space-y-6 py-8 sm:py-12">
-          <div className="space-y-3">
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-slate-950 leading-tight tracking-tight">Welcome back, {displayName}!</h1>
-            <p className="text-xl sm:text-2xl text-slate-700 font-medium italic">Your official portal for transparent public service grievance redressal</p>
+      {/* Mobile Menu */}
+      {menuOpen && (
+        <div className="sm:hidden fixed top-[80px] left-0 right-0 bg-white border-b border-[var(--goi-line)] shadow-lg z-40 animate-fade-in">
+          <div className="flex flex-col items-center gap-4 py-6 px-4">
+            <div className="text-center">
+              <p className="text-xs font-medium text-[var(--goi-muted)] uppercase tracking-wide">Logged in as</p>
+              <p className="font-semibold text-[var(--goi-ink)]">{user?.name || "Citizen"}</p>
+            </div>
+            <button onClick={() => { navigate("/all-complaints"); setMenuOpen(false); }} className="btn-secondary w-full justify-center">All Grievances</button>
+            <button onClick={() => { handleLogout(); setMenuOpen(false); }} className="btn-primary w-full justify-center">Logout</button>
           </div>
-          <div className="space-y-3">
-            <p className="text-base sm:text-lg text-slate-600 leading-relaxed max-w-3xl">Submit civic grievances, track departmental action, and provide feedback after resolution.</p>
-            <p className="text-base sm:text-lg text-slate-600 leading-relaxed max-w-3xl">Your submissions help public authorities improve service delivery and accountability.</p>
+        </div>
+      )}
+
+      {/* ============ MAIN CONTENT ============ */}
+      <main className="flex-1 page-surface pt-28 pb-12 space-y-10">
+        {/* Welcome Section */}
+        <section>
+          <div className="mb-6">
+            <span className="section-kicker">Citizen Dashboard</span>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[var(--goi-ink)] mt-2 leading-tight">
+              Welcome back, {displayName}
+            </h1>
+            <p className="text-lg text-[var(--goi-muted)] mt-2">Your official portal for transparent public service grievance redressal</p>
           </div>
           <div className="trust-banner flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0f4c45" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                <polyline points="9 12 11 14 15 10" />
-              </svg>
-              <p className="text-sm font-semibold text-slate-900">Your complaint history is protected by immutable audit tracking on ICP blockchain</p>
+              <FiShield className="w-5 h-5 text-[var(--goi-deep)] flex-shrink-0" />
+              <p className="text-sm font-semibold text-[var(--goi-ink)]">Your complaint history is protected by immutable audit tracking on ICP blockchain</p>
             </div>
             <span className="blockchain-shield text-xs whitespace-nowrap">✓ Verifiable Audit Trail</span>
           </div>
         </section>
 
+        {/* Notifications */}
         {notice && (
-          <div className="success-message border-2 border-emerald-300 bg-emerald-50/80 px-6 py-4 rounded-12 shadow-sm animate-fade-in">
-            <p className="text-sm sm:text-base font-semibold text-emerald-900">{notice}</p>
+          <div className="success-message flex items-center gap-2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+            {notice}
           </div>
         )}
         {errorMessage && (
-          <div className="error-message border-2 border-red-300 bg-red-50/80 px-6 py-4 rounded-12 shadow-sm animate-fade-in">
-            <p className="text-sm sm:text-base font-semibold text-red-900">{errorMessage}</p>
-          </div>
+          <div className="error-message">{errorMessage}</div>
         )}
 
-        <section className="space-y-6">
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">Your Statistics</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 lg:gap-8">
+        {/* Statistics */}
+        <section>
+          <h2 className="text-xl font-bold text-[var(--goi-ink)] mb-5">Your Statistics</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
             {[
               { title: "Total Grievances", count: (parseInt(counts.resolved, 10) || 0) + (parseInt(counts.in_progress, 10) || 0) + (parseInt(counts.pending, 10) || 0), icon: FiFileText },
               { title: "Resolved", count: counts.resolved, icon: FiCheckCircle },
@@ -276,26 +269,27 @@ useEffect(() => {
             ].map((s) => {
               const StatIcon = s.icon;
               return (
-              <div key={s.title} className="premium-card metric-card p-8 hover-lift group">
+              <div key={s.title} className="premium-card p-6 metric-card">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-5xl font-extrabold text-slate-950 mb-2">{s.count}</div>
-                    <div className="font-semibold text-slate-600">{s.title}</div>
+                    <div className="text-4xl font-black text-[var(--goi-ink)] tabular-nums">{s.count}</div>
+                    <div className="mt-1 font-semibold text-sm text-[var(--goi-muted)]">{s.title}</div>
                   </div>
-                  <StatIcon className="h-10 w-10 text-teal-900 opacity-25 transition-opacity group-hover:opacity-45" aria-hidden="true" />
+                  <StatIcon className="w-9 h-9 text-[var(--goi-deep)]/25" aria-hidden="true" />
                 </div>
               </div>
             )})}
           </div>
         </section>
 
-        <section className="surface-panel p-8 lg:p-10">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
+        {/* Quick Actions */}
+        <section className="surface-panel p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
             <div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">Quick Actions</h2>
-              <p className="text-slate-600">Common public service categories</p>
+              <h2 className="text-xl font-bold text-[var(--goi-ink)]">Quick Actions</h2>
+              <p className="text-sm text-[var(--goi-muted)]">Common public service categories</p>
             </div>
-            <button onClick={() => setIsSubmitOpen(true)} className="btn-primary whitespace-nowrap px-6 py-2.5">+ New Grievance</button>
+            <button onClick={() => setIsSubmitOpen(true)} className="btn-primary whitespace-nowrap">+ New Grievance</button>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
@@ -307,172 +301,184 @@ useEffect(() => {
               const ActionIcon = cat.icon;
               return (
               <button key={cat.label} onClick={() => setIsSubmitOpen(true)}
-                className="h-32 flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-slate-200 hover:border-slate-400 hover:bg-slate-50 transition-all duration-200 group">
-                <ActionIcon className="h-9 w-9 text-teal-900 transition-transform group-hover:scale-110" aria-hidden="true" />
-                <span className="text-sm font-semibold text-slate-700 text-center">{cat.label}</span>
+                className="h-28 flex flex-col items-center justify-center gap-2.5 rounded-lg border-2 border-[var(--goi-line)] hover:border-[var(--goi-deep)]/30 hover:bg-[var(--goi-deep)]/5 transition-all duration-200 group">
+                <ActionIcon className="w-8 h-8 text-[var(--goi-deep)] transition-transform group-hover:scale-110" aria-hidden="true" />
+                <span className="text-sm font-semibold text-[var(--goi-muted)] group-hover:text-[var(--goi-ink)]">{cat.label}</span>
               </button>
             )})}
           </div>
         </section>
 
-        <section className="surface-panel p-8">
-          <div className="mb-6 pb-4 border-b-2 border-slate-200">
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">Your Active Grievances</h2>
-            <p className="text-slate-600 mt-2">Pending and in-progress complaints</p>
+        {/* Active Grievances Table */}
+        <section className="surface-panel p-6">
+          <div className="mb-5 pb-4 border-b border-[var(--goi-line)]">
+            <h2 className="text-xl font-bold text-[var(--goi-ink)]">Your Active Grievances</h2>
+            <p className="text-sm text-[var(--goi-muted)] mt-1">Pending and in-progress complaints</p>
           </div>
-          <div className="table-shell rounded-xl overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-slate-50 border-b border-slate-200">
+          <div className="table-shell">
+            <table className="w-full">
+              <thead>
+                <tr>
+                  <th>Category</th>
+                  <th>Status</th>
+                  <th>Title</th>
+                  <th>Submitted</th>
+                  <th className="text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {isLoadingComplaints ? (
                   <tr>
-                    <th className="px-6 py-4 text-left text-sm font-bold text-slate-700 uppercase tracking-wide">Category</th>
-                    <th className="px-6 py-4 text-left text-sm font-bold text-slate-700 uppercase tracking-wide">Status</th>
-                    <th className="px-6 py-4 text-left text-sm font-bold text-slate-700 uppercase tracking-wide">Title</th>
-                    <th className="px-6 py-4 text-left text-sm font-bold text-slate-700 uppercase tracking-wide">Submitted</th>
-                    <th className="px-6 py-4 text-right text-sm font-bold text-slate-700 uppercase tracking-wide">Action</th>
+                    <td colSpan="5" className="text-center py-12 text-[var(--goi-muted)]">
+                      <div className="flex items-center justify-center gap-3">
+                        <div className="app-loader spinner-sm inline-grid"></div>
+                        Loading grievances...
+                      </div>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {isLoadingComplaints ? (
-                    <tr>
-                      <td colSpan="5" className="px-6 py-12 text-center text-slate-500">
-                        <div className="flex items-center justify-center gap-3">
-                          <div className="app-loader spinner-sm"></div>
-                          Loading grievances...
-                        </div>
+                ) : activeComplaints.length > 0 ? (
+                  activeComplaints.map(c => (
+                    <tr key={c.id}>
+                      <td className="font-medium text-[var(--goi-ink)]">{c.category}</td>
+                      <td><span className={statusClassName(c.status)}>{normalizeStatus(c.status)}</span></td>
+                      <td className="font-medium text-[var(--goi-ink)] truncate max-w-xs">{c.title}</td>
+                      <td className="text-sm text-[var(--goi-muted)]">{c.subdate}</td>
+                      <td className="text-right">
+                        <button className="btn-secondary btn-sm" onClick={() => handleDetails(c)}>Details</button>
                       </td>
                     </tr>
-                  ) : activeComplaints.length > 0 ? (
-                    activeComplaints.map(c => (
-                      <tr key={c.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                        <td className="px-6 py-4 text-slate-900 font-medium">{c.category}</td>
-                        <td className="px-6 py-4">
-                          <span className={statusClassName(c.status)}>{normalizeStatus(c.status)}</span>
-                        </td>
-                        <td className="px-6 py-4 text-slate-900 font-medium truncate max-w-xs">{c.title}</td>
-                        <td className="px-6 py-4 text-slate-600 text-sm">{c.subdate}</td>
-                        <td className="px-6 py-4 text-right">
-                          <button className="btn-secondary btn-sm" onClick={() => handleDetails(c)}>Details</button>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="5" className="px-6 py-12 text-center text-slate-500">No active grievances. Submit a new one to get started!</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="5" className="text-center py-12 text-[var(--goi-muted)]">No active grievances. Submit a new one to get started!</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </section>
 
-{resolvedComplaints.length > 0 && (
-  <div className="surface-panel p-8 border-l-4 border-l-green-400">
-    <h2 className="text-2xl font-bold mb-6 text-green-800">Resolved Grievances</h2>
-    <div className="overflow-hidden rounded-lg border border-gray-300">
-      <div className="max-h-[300px] overflow-y-auto">
-        <table className="min-w-full divide-y divide-blue-200">
-          <thead className="bg-white sticky top-0 z-10">
-            <tr>
-              <th className="p-4 text-left text-sm font-bold text-gray-700 uppercase tracking-wider font-mono">Category</th>
-              <th className="p-4 text-left text-sm font-bold text-gray-700 uppercase tracking-wider font-mono">Title</th>
-              <th className="p-4 text-left text-sm font-bold text-gray-700 uppercase tracking-wider font-mono">Date</th>
-              <th className="p-4 text-left text-sm font-bold text-gray-700 uppercase tracking-wider font-mono">Details</th>
-              <th className="p-4 text-left text-sm font-bold text-gray-700 uppercase tracking-wider font-mono">Feedback</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-blue-200 bg-white">
-            {resolvedComplaints.map(c => (
-              <tr key={c.id} className="hover:bg-blue-50 transition">
-                <td className="p-4 text-gray-900 font-medium font-mono">{c.category}</td>
-                <td className="p-4 text-gray-900 font-medium font-mono">{c.title}</td>
-                <td className="p-4 text-gray-900 font-medium font-mono">{c.subdate}</td>
-                <td className="p-4 text-gray-600 text-sm font-mono ">
-                  <button className="text-blue-600 hover:text-blue-800 text-sm font-medium font-mono" onClick={() => handleDetails(c)}>View Details</button>
-                </td>
-                <td>
-                  <button className="btn-secondary px-3 py-1 text-sm" onClick={() => navigate("/feedback-page", { state: { complaint: c } })}>Give Feedback</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-)}
+        {/* Resolved Grievances */}
+        {resolvedComplaints.length > 0 && (
+          <section className="surface-panel p-6 border-l-4 border-l-emerald-500">
+            <h2 className="text-xl font-bold text-emerald-800 mb-5">Resolved Grievances</h2>
+            <div className="table-shell">
+              <table className="w-full">
+                <thead>
+                  <tr>
+                    <th>Category</th>
+                    <th>Title</th>
+                    <th>Date</th>
+                    <th>Details</th>
+                    <th>Feedback</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {resolvedComplaints.map(c => (
+                    <tr key={c.id}>
+                      <td className="font-medium">{c.category}</td>
+                      <td className="font-medium">{c.title}</td>
+                      <td>{c.subdate}</td>
+                      <td>
+                        <button className="text-[var(--goi-deep)] hover:underline text-sm font-medium" onClick={() => handleDetails(c)}>View Details</button>
+                      </td>
+                      <td>
+                        <button className="btn-secondary btn-sm" onClick={() => navigate("/feedback-page", { state: { complaint: c } })}>Give Feedback</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+      </main>
 
-</main>
+      {/* ============ FOOTER ============ */}
+      <footer className="text-center py-4 bg-white border-t border-[var(--goi-line)] text-sm text-[var(--goi-muted)]">
+        &copy; {new Date().getFullYear()} Government of India Public Grievance Resolution Portal &middot; Secured by ICP Blockchain
+      </footer>
 
+      {/* ============ SUBMIT COMPLAINT MODAL ============ */}
       {isSubmitOpen && (
         <div className="modal-backdrop" onClick={() => setIsSubmitOpen(false)} role="dialog" aria-modal="true" aria-labelledby="new-complaint-title">
-          <div className="overflow-hidden">
-          <div className="modal-shell max-h-[80vh] overflow-y-auto w-full max-w-lg p-8" onClick={(e) => e.stopPropagation()}>
-            <h3 id="new-complaint-title" className="text-2xl font-bold text-teal-900 mb-6 border-b pb-2">Submit New Grievance</h3>
-            <form onSubmit={handleNewComplaint} className="space-y-5 bg-white p-6 rounded-2xl shadow-lg">
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700">Grievance Category <span className="text-red-500">*</span></label>
-                <select name="category" required className="w-full p-3 border border-gray-300 rounded-lg focus:ring-4 focus:ring-teal-100 focus:border-teal-700 transition shadow-inner appearance-none bg-white">
+          <div className="modal-shell" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h3 id="new-complaint-title" className="text-xl font-bold text-[var(--goi-ink)]">Submit New Grievance</h3>
+              <button onClick={() => setIsSubmitOpen(false)} className="text-[var(--goi-muted)] hover:text-[var(--goi-ink)] transition-colors" aria-label="Close">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+            <form onSubmit={handleNewComplaint} className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Grievance Category <span className="text-red-500">*</span></label>
+                <select name="category" required className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[var(--goi-deep)]/20 focus:border-[var(--goi-deep)] outline-none transition-all bg-white">
                   <option value="">Select Category</option>
                   <option>Electrical</option><option>Water Leak</option><option>Pathway Damage</option><option>Garbage</option>
                 </select>
               </div>
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700">Title <span className="text-red-500">*</span></label>
-                <input name="title" type="text" required placeholder="e.g., Tent #12, Sector C" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-4 focus:ring-teal-100 focus:border-teal-700 transition shadow-inner" />
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Title <span className="text-red-500">*</span></label>
+                <input name="title" type="text" required placeholder="e.g., Tent #12, Sector C" className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[var(--goi-deep)]/20 focus:border-[var(--goi-deep)] outline-none transition-all" />
               </div>
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700">Location / Address <span className="text-red-500">*</span></label>
-                <input name="location" type="text" required placeholder="e.g., Tent #12, Sector C" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-4 focus:ring-teal-100 focus:border-teal-700 transition shadow-inner" />
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Location / Address <span className="text-red-500">*</span></label>
+                <input name="location" type="text" required placeholder="e.g., Tent #12, Sector C" className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[var(--goi-deep)]/20 focus:border-[var(--goi-deep)] outline-none transition-all" />
               </div>
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700">Detailed Description <span className="text-red-500">*</span></label>
-                <textarea name="description" required placeholder="What is the issue?" rows={4} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-4 focus:ring-teal-100 focus:border-teal-700 transition shadow-inner resize-none"></textarea>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Detailed Description <span className="text-red-500">*</span></label>
+                <textarea name="description" required placeholder="What is the issue?" rows={4} className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[var(--goi-deep)]/20 focus:border-[var(--goi-deep)] outline-none transition-all resize-none" />
               </div>
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700">Upload Photo (optional but recommended)</label>
-                <input name="photo" type="file" accept="image/*" className="w-full p-2 border border-gray-300 rounded-lg focus:ring-4 focus:ring-teal-100 focus:border-teal-700 transition file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-900 hover:file:bg-teal-100" />
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Upload Photo (optional but recommended)</label>
+                <input name="photo" type="file" accept="image/*" className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[var(--goi-deep)]/10 file:text-[var(--goi-deep)] hover:file:bg-[var(--goi-deep)]/20 transition-all" />
               </div>
-              <div className="flex justify-end gap-3 pt-4">
+              <div className="flex justify-end gap-3 pt-2">
                 <button type="button" className="btn-muted" onClick={() => setIsSubmitOpen(false)} disabled={isSubmittingComplaint}>Cancel</button>
-                <button type="submit" className="btn-primary" disabled={isSubmittingComplaint}>{isSubmittingComplaint ? "Submitting..." : "Submit"}</button>
+                <button type="submit" className="btn-primary" disabled={isSubmittingComplaint}>{isSubmittingComplaint ? "Submitting..." : "Submit Grievance"}</button>
               </div>
             </form>
-          </div>
           </div>
         </div>
       )}
 
+      {/* ============ VIEW DETAILS MODAL ============ */}
       {isViewOpen && selectedComplaint && (
         <div className="modal-backdrop" onClick={() => setIsViewOpen(false)} role="dialog" aria-modal="true" aria-labelledby="complaint-details-title">
-          <div className="modal-shell w-full max-w-4xl h-[85vh] relative overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
-            <button className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-xl" onClick={() => setIsViewOpen(false)} aria-label="Close complaint details">✕</button>
-
+          <div className="modal-shell max-w-3xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
-              <h2 id="complaint-details-title" className="text-3xl font-bold text-slate-900">
+              <h2 id="complaint-details-title" className="text-xl font-bold text-[var(--goi-ink)]">
                 Grievance #{selectedComplaint.id}: {selectedComplaint.category}
               </h2>
-              <BlockchainBadge verified={verificationRecord?.verified} size="lg" />
+              <div className="flex items-center gap-3">
+                <BlockchainBadge verified={verificationRecord?.verified} size="lg" />
+                <button onClick={() => setIsViewOpen(false)} className="text-[var(--goi-muted)] hover:text-[var(--goi-ink)] transition-colors" aria-label="Close">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
             </div>
 
             <div className="details-grid mb-6">
               <p><strong>Title:</strong> {selectedComplaint.title}</p>
               <p><strong>Status:</strong> {normalizeStatus(selectedComplaint.status)}</p>
               <p><strong>Priority:</strong> {selectedComplaint.priority}</p>
-              <p><strong>Assigned To:</strong> {selectedComplaint.assignedTo}</p>
+              <p><strong>Assigned To:</strong> {selectedComplaint.assignedTo || "Not assigned"}</p>
               <p><strong>Submit Date:</strong> {selectedComplaint.subdate}</p>
               <p><strong>Last Update:</strong> {selectedComplaint.update}</p>
             </div>
 
-            <div className="mb-6">
-              <p className="mb-2"><strong>Location:</strong> {selectedComplaint.location}</p>
-              <p className="mb-2"><strong>Description:</strong> {selectedComplaint.description}</p>
+            <div className="mb-6 space-y-2">
+              <p><strong>Location:</strong> {selectedComplaint.location}</p>
+              <p><strong>Description:</strong> {selectedComplaint.description}</p>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-white p-6">
+            <div className="rounded-lg border border-[var(--goi-line)] bg-white p-5">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-slate-900">Immutable Audit Trail</h3>
+                <h3 className="text-base font-bold text-[var(--goi-ink)]">Immutable Audit Trail</h3>
                 {verificationRecord?.verified && (
                   <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -484,7 +490,7 @@ useEffect(() => {
               </div>
               <AuditTimeline events={auditTrail} loading={isLoadingAuditTrail} />
               {verificationRecord?.verified && (
-                <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-2 gap-3 text-xs text-slate-500">
+                <div className="mt-4 pt-4 border-t border-[var(--goi-line)] grid grid-cols-2 gap-3 text-xs text-[var(--goi-muted)]">
                   {verificationRecord.blockId && <p><strong>Block ID:</strong> {verificationRecord.blockId}</p>}
                   {verificationRecord.timestamp && <p><strong>Verified At:</strong> {new Date(verificationRecord.timestamp).toLocaleString()}</p>}
                   {verificationRecord.canisterId && <p><strong>Canister:</strong> {verificationRecord.canisterId}</p>}
@@ -495,16 +501,12 @@ useEffect(() => {
 
             {selectedComplaint.photo && (
               <div className="mt-6 flex justify-center">
-                <img src={apiUrl(selectedComplaint.photo)} alt="Complaint" className="max-w-full max-h-[400px] rounded-lg shadow-md" />
+                <img src={apiUrl(selectedComplaint.photo)} alt="Complaint" className="max-w-full max-h-[350px] rounded-lg shadow-md object-contain" />
               </div>
             )}
           </div>
         </div>
       )}
-
-      <footer className="text-center py-4 bg-white shadow-inner text-gray-600 text-sm">
-        © {new Date().getFullYear()} Government of India Public Grievance Resolution Portal. &middot; Secured by ICP Blockchain
-      </footer>
     </div>
   );
 };

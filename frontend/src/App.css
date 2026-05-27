@@ -2,436 +2,94 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ============= PREMIUM MOTION FRAMEWORK ============= */
-
 /* ============= PAGE TRANSITIONS ============= */
 @keyframes pageEnter {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes pageExit {
-  from {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(12px);
-  }
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .page-enter {
-  animation: pageEnter 400ms cubic-bezier(0.4, 0, 0.2, 1);
+  animation: pageEnter 350ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.page-exit {
-  animation: pageExit 300ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* ============= ELEMENT REVEAL ANIMATIONS ============= */
-@keyframes revealsUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes revealScale {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes revealLeft {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes revealRight {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-.reveal-up {
-  animation: revealsUp 500ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.reveal-scale {
-  animation: revealScale 400ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.reveal-left {
-  animation: revealLeft 500ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.reveal-right {
-  animation: revealRight 500ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Staggered children */
-.stagger-container > * {
-  animation: revealsUp 500ms cubic-bezier(0.4, 0, 0.2, 1) backwards;
-}
-
-.stagger-container > :nth-child(1) { animation-delay: 50ms; }
-.stagger-container > :nth-child(2) { animation-delay: 100ms; }
-.stagger-container > :nth-child(3) { animation-delay: 150ms; }
-.stagger-container > :nth-child(4) { animation-delay: 200ms; }
-.stagger-container > :nth-child(5) { animation-delay: 250ms; }
-.stagger-container > :nth-child(6) { animation-delay: 300ms; }
-
-/* ============= HOVER INTERACTIONS ============= */
-.interactive-lift {
-  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 200ms ease;
-}
-
-.interactive-lift:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 28px rgba(15, 76, 69, 0.12);
-}
-
-/* ============= BUTTON FEEDBACK ============= */
-@keyframes buttonPress {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(0.98);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-@keyframes ripple {
-  0% {
-    transform: scale(0);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(4);
-    opacity: 0;
-  }
-}
-
-.button-feedback:active {
-  animation: buttonPress 200ms ease;
-}
-
-.ripple {
-  position: absolute;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.6);
-  transform: scale(0);
-  animation: ripple 600ms ease-out;
+/* ============= TOAST NOTIFICATIONS ============= */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   pointer-events: none;
 }
 
-/* ============= INPUT FOCUS ANIMATIONS ============= */
-@keyframes inputFocus {
-  from {
-    background-color: rgba(255, 255, 255, 0.95);
-  }
-  to {
-    background-color: rgba(240, 255, 254, 0.5);
-  }
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.2);
+  animation: toastSlideIn 300ms cubic-bezier(0.22, 1, 0.36, 1);
+  max-width: 380px;
+  line-height: 1.4;
 }
 
-@keyframes labelFloat {
-  from {
-    transform: translateY(0);
-    opacity: 0.7;
-  }
-  to {
-    transform: translateY(-1.5rem);
-    opacity: 1;
-  }
+.toast.success {
+  background: #047857;
+  color: white;
+  border: 1px solid rgba(5, 150, 105, 0.3);
 }
 
-.input-focus {
-  animation: inputFocus 200ms ease;
+.toast.error {
+  background: #dc2626;
+  color: white;
+  border: 1px solid rgba(220, 38, 38, 0.3);
 }
 
-.label-float {
-  animation: labelFloat 200ms cubic-bezier(0.4, 0, 0.2, 1);
+.toast.info {
+  background: #0369a1;
+  color: white;
+  border: 1px solid rgba(3, 105, 161, 0.3);
 }
 
-/* ============= LOADING & WAIT STATES ============= */
-@keyframes loadingPulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
+.toast.warning {
+  background: #b45309;
+  color: white;
+  border: 1px solid rgba(180, 83, 9, 0.3);
 }
 
-@keyframes loadingBounce {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-8px);
-  }
+.toast.exiting {
+  animation: toastSlideOut 250ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-@keyframes skeletonShimmer {
-  0% {
-    background-position: -1000px 0;
-  }
-  100% {
-    background-position: 1000px 0;
-  }
+@keyframes toastSlideIn {
+  from { transform: translateX(120%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
 }
 
-.loading-pulse {
-  animation: loadingPulse 1.5s ease-in-out infinite;
+@keyframes toastSlideOut {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(120%); opacity: 0; }
 }
 
-.loading-bounce {
-  animation: loadingBounce 0.6s ease-in-out infinite;
-}
-
-.skeleton-shimmer {
-  background: linear-gradient(90deg, #f0fffe 0%, #d4f4f1 50%, #f0fffe 100%);
-  background-size: 1000px 100%;
-  animation: skeletonShimmer 2s infinite;
-}
-
-/* ============= MODAL & OVERLAY ANIMATIONS ============= */
-@keyframes modalBackdropEnter {
-  from {
-    opacity: 0;
-    backdrop-filter: blur(0px);
-  }
-  to {
-    opacity: 1;
-    backdrop-filter: blur(6px);
-  }
-}
-
-@keyframes modalContentEnter {
-  from {
-    opacity: 0;
-    transform: scale(0.95) translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-@keyframes modalContentExit {
-  from {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-  to {
-    opacity: 0;
-    transform: scale(0.95) translateY(20px);
-  }
-}
-
-.modal-backdrop-enter {
-  animation: modalBackdropEnter 300ms ease;
-}
-
-.modal-content-enter {
-  animation: modalContentEnter 300ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.modal-content-exit {
-  animation: modalContentExit 250ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* ============= DROPDOWN & POPOVER ANIMATIONS ============= */
-@keyframes dropdownEnter {
-  from {
-    opacity: 0;
-    transform: translateY(-8px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes dropdownExit {
-  from {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(-8px) scale(0.98);
-  }
-}
-
-.dropdown-enter {
-  animation: dropdownEnter 200ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.dropdown-exit {
-  animation: dropdownExit 150ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* ============= TOAST & NOTIFICATION ANIMATIONS ============= */
-@keyframes toastEnter {
-  from {
-    opacity: 0;
-    transform: translateX(400px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes toastExit {
-  from {
-    opacity: 1;
-    transform: translateX(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateX(400px);
-  }
-}
-
-.toast-enter {
-  animation: toastEnter 300ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.toast-exit {
-  animation: toastExit 250ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* ============= SCROLL REVEAL UTILITIES ============= */
-.scroll-reveal {
-  opacity: 0;
-  transform: translateY(20px);
-}
-
-.scroll-reveal.visible {
-  animation: revealsUp 600ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-/* ============= TRANSITION UTILITIES ============= */
-.transition-smooth {
+/* ============= INTERACTIVE LIFT ============= */
+.hover-lift {
   transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.transition-smooth-fast {
-  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.transition-smooth-slow {
-  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.transition-bounce {
-  transition: all 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-/* ============= PARALLAX & DEPTH EFFECTS ============= */
-.parallax-slow {
-  will-change: transform;
-}
-
-.depth-effect {
-  box-shadow: 
-    0 2px 4px rgba(15, 76, 69, 0.05),
-    0 4px 8px rgba(15, 76, 69, 0.08),
-    0 8px 16px rgba(15, 76, 69, 0.1);
-  transition: box-shadow 200ms ease;
+.hover-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 20px 40px rgba(15, 76, 69, 0.12);
 }
 
 /* ============= SMOOTH SCROLLING ============= */
 html {
   scroll-behavior: smooth;
-}
-
-.scroll-smooth {
-  scroll-behavior: smooth;
-}
-
-/* ============= PROGRESS ANIMATIONS ============= */
-@keyframes progress {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-.progress-bar {
-  background: linear-gradient(
-    90deg,
-    rgba(15, 76, 69, 0.8) 0%,
-    rgba(15, 76, 69, 0.4) 50%,
-    rgba(15, 76, 69, 0.8) 100%
-  );
-  background-size: 200% 100%;
-  animation: progress 1.5s ease-in-out infinite;
-}
-
-/* ============= ACCESSIBILITY RESPECTS PREFERENCE ============= */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    scroll-behavior: auto !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-
-/* ============= PERFORMANCE OPTIMIZATIONS ============= */
-.will-animate {
-  will-change: transform, opacity;
-}
-
-.gpu-accelerate {
-  transform: translateZ(0);
-  backface-visibility: hidden;
-}
-
-/* ============= ROOT ELEMENT STYLING ============= */
-#root {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
 }
 
 /* ============= SMOOTH COLOR TRANSITIONS ============= */
@@ -444,4 +102,10 @@ textarea,
   transition-property: background-color, border-color, color, box-shadow;
   transition-duration: 200ms;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============= PERFORMANCE OPTIMIZATIONS ============= */
+.gpu-accelerate {
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }

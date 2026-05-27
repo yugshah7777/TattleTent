@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Logo from "./Logo.jsx";
-import { FaBars } from "react-icons/fa";
+import { FaBars, FaTimes } from "react-icons/fa";
+import { FiShield } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
@@ -211,7 +212,7 @@ const StaffDashboard = () => {
     }
   };
 
-  const performanceMetrics = React.useMemo(() => {
+  const performanceMetrics = useMemo(() => {
     const assigned = complaints.filter((c) => c.staff_id === user.user_id);
     const resolved = assigned.filter((c) => c.status === "Resolved");
     const active = assigned.filter((c) => c.status === "IN_PROGRESS");
@@ -286,102 +287,106 @@ const StaffDashboard = () => {
   }, [complaints, user.user_id]);
 
   return (
-    <div className="app-shell min-h-screen font-sans flex flex-col justify-between">
-      {/* Navbar with ICP indicator */}
-      <nav className="premium-nav fixed top-0 left-0 w-full z-50">
-        <div className="flex items-center justify-between h-24 px-6 sm:px-8">
-          <Logo />
-          <button
-            className="sm:hidden p-2 rounded-md bg-gray-100 hover:bg-gray-200"
-            onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Toggle navigation menu"
-            aria-expanded={menuOpen}
-          >
-            <FaBars size={22} className="text-gray-800" />
-          </button>
-          <div className="hidden sm:flex items-center gap-4">
-            <div className="flex items-center gap-2 mr-2 border-r border-slate-200 pr-3">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#047857" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                <polyline points="9 12 11 14 15 10" />
-              </svg>
-              <span className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">ICP Audited</span>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-600">Logged in as</p>
-              <p className="font-semibold text-gray-800">Department Officer</p>
-            </div>
-            <button onClick={() => setShowPerformance(true)} className="btn-secondary px-5 py-2.5">Performance Audit</button>
-            <button onClick={handleLogout} className="btn-primary px-5 py-2.5">Logout</button>
+    <div className="min-h-screen flex flex-col">
+      {/* ============ NAVBAR ============ */}
+      <nav className="premium-nav">
+        <Logo />
+        <button
+          className="sm:hidden p-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 transition-colors"
+          onClick={() => setMenuOpen(!menuOpen)}
+          aria-label="Toggle navigation"
+        >
+          {menuOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
+        </button>
+        <div className="hidden sm:flex items-center gap-4">
+          <div className="flex items-center gap-2 mr-2 border-r border-[var(--goi-line)] pr-3">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#047857" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              <polyline points="9 12 11 14 15 10" />
+            </svg>
+            <span className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">ICP Audited</span>
           </div>
+          <div className="text-right">
+            <p className="text-xs text-[var(--goi-muted)]">Logged in as</p>
+            <p className="font-semibold text-[var(--goi-ink)]">{user.name}</p>
+          </div>
+          <button onClick={() => setShowPerformance(true)} className="btn-secondary">Performance Audit</button>
+          <button onClick={handleLogout} className="btn-primary">Logout</button>
         </div>
-        {menuOpen && (
-          <div className="flex flex-col items-center gap-3 pb-4 sm:hidden bg-white shadow-md border-t">
-            <div className="text-center">
-              <p className="text-sm text-gray-600">Logged in as</p>
-              <p className="font-semibold text-gray-800">Department Officer</p>
-            </div>
-            <button onClick={() => { setShowPerformance(true); setMenuOpen(false); }} className="btn-secondary w-11/12 px-5 py-2.5">Performance Audit</button>
-            <button onClick={() => { handleLogout(); setMenuOpen(false); }} className="btn-primary w-11/12 px-5 py-2.5">Logout</button>
-          </div>
-        )}
       </nav>
 
-      <div className="flex flex-col items-center justify-center text-center pt-36 px-6 mb-12 space-y-6">
-        <h1 className="text-5xl sm:text-6xl font-extrabold text-slate-950">Welcome, {user.name}</h1>
-        <p className="text-2xl text-gray-700 mt-4 italic">Review assigned grievances, update action status, and maintain accountable service delivery.</p>
-      </div>
-
-      {/* Accountability Banner */}
-      <div className="mx-6 sm:mx-10 trust-banner flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
-        <div className="flex items-center gap-3">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0f4c45" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          </svg>
-          <p className="text-sm font-semibold text-slate-900">All lifecycle actions are transparently recorded on the ICP immutable ledger</p>
+      {/* Mobile Menu */}
+      {menuOpen && (
+        <div className="sm:hidden fixed top-[80px] left-0 right-0 bg-white border-b border-[var(--goi-line)] shadow-lg z-40 animate-fade-in">
+          <div className="flex flex-col items-center gap-4 py-6 px-4">
+            <div className="text-center">
+              <p className="text-sm text-[var(--goi-muted)]">Logged in as</p>
+              <p className="font-semibold text-[var(--goi-ink)]">{user.name}</p>
+            </div>
+            <button onClick={() => { setShowPerformance(true); setMenuOpen(false); }} className="btn-secondary w-full justify-center">Performance Audit</button>
+            <button onClick={() => { handleLogout(); setMenuOpen(false); }} className="btn-primary w-full justify-center">Logout</button>
+          </div>
         </div>
-        <span className="blockchain-shield text-xs whitespace-nowrap">✓ Tamper-Resistant Audit Trail</span>
-      </div>
-
-      <hr className="border-gray-200" />
-
-      {errorMessage && (
-        <div className="mx-6 sm:mx-10 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-medium text-red-800 shadow-sm">{errorMessage}</div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 p-6 sm:p-10">
-        {[
-          { title: "Total Grievances", count: (parseInt(counts.resolved, 10) || 0) + (parseInt(counts.in_progress, 10) || 0) + (parseInt(counts.pending, 10) || 0) },
-          { title: "In Progress", count: counts.in_progress },
-          { title: "Pending", count: counts.pending },
-        ].map((s) => (
-          <div key={s.title} className="premium-card metric-card flex flex-col items-center px-3 py-8 text-slate-900">
-            <div className="text-4xl font-extrabold">{s.count}</div>
-            <div className="mt-2 font-semibold text-lg text-center">{s.title}</div>
-          </div>
-        ))}
-      </div>
+      {/* ============ MAIN CONTENT ============ */}
+      <main className="flex-1 page-surface pt-28 pb-12 space-y-8">
+        {/* Welcome */}
+        <div>
+          <span className="section-kicker">Staff Dashboard</span>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[var(--goi-ink)] mt-2 leading-tight">Welcome, {user.name}</h1>
+          <p className="text-lg text-[var(--goi-muted)] mt-2">Review assigned grievances, update action status, and maintain accountable service delivery.</p>
+        </div>
 
-      <main className="px-4 sm:px-12 space-y-16">
-        <section>
-          <div className="flex justify-between items-center mb-6 border-l-4 border-red-400 pl-3">
-            <h3 className="text-2xl font-bold text-gray-900">Assigned Grievances</h3>
+        {/* Accountability Banner */}
+        <div className="trust-banner flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <FiShield className="w-5 h-5 text-[var(--goi-deep)] flex-shrink-0" />
+            <p className="text-sm font-semibold text-[var(--goi-ink)]">All lifecycle actions are transparently recorded on the ICP immutable ledger</p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <span className="blockchain-shield text-xs whitespace-nowrap">✓ Tamper-Resistant Audit Trail</span>
+        </div>
+
+        {errorMessage && (
+          <div className="error-message">{errorMessage}</div>
+        )}
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          {[
+            { title: "Total Grievances", count: (parseInt(counts.resolved, 10) || 0) + (parseInt(counts.in_progress, 10) || 0) + (parseInt(counts.pending, 10) || 0) },
+            { title: "In Progress", count: counts.in_progress },
+            { title: "Pending", count: counts.pending },
+          ].map((s) => (
+            <div key={s.title} className="premium-card metric-card p-6 flex flex-col items-center">
+              <div className="text-4xl font-black text-[var(--goi-ink)] tabular-nums">{s.count}</div>
+              <div className="mt-1 font-semibold text-sm text-[var(--goi-muted)]">{s.title}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Assigned Grievances */}
+        <section className="surface-panel p-6">
+          <div className="flex items-center gap-3 mb-5 pb-4 border-b border-[var(--goi-line)]">
+            <div className="w-1 h-6 bg-red-400 rounded-full"></div>
+            <h2 className="text-xl font-bold text-[var(--goi-ink)]">Assigned Grievances</h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {isLoadingComplaints ? (
               <div className="empty-state sm:col-span-2 lg:col-span-3">Loading assigned grievances...</div>
             ) : paginatedNewComplaints.length > 0 ? paginatedNewComplaints.map((c) => (
-              <div key={c.id} className="premium-card p-6">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h4 className="text-xl font-semibold text-gray-800">{c.category}</h4>
+              <div key={c.id} className="premium-card p-5">
+                <div className="flex items-center gap-2 flex-wrap mb-3">
+                  <h3 className="text-base font-bold text-[var(--goi-ink)]">{c.category}</h3>
                   <span className={statusClassName(c.status)}>{normalizeStatus(c.status)}</span>
-                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getPriorityBadge(c.priority)}`}>{c.priority}</span>
+                  <span className={`px-2 py-0.5 rounded-full text-[0.65rem] font-bold ${getPriorityBadge(c.priority)}`}>{c.priority}</span>
                 </div>
-                <p className="text-gray-600 mt-2">{c.location}</p>
-                <p className="text-gray-500 text-sm mt-1">{c.subdate}</p>
-                <div className="flex gap-3 mt-5">
-                  <button onClick={() => handleViewClick(c)} className="btn-muted flex-1 justify-center">Open</button>
-                  <button onClick={() => handleResolvedComplaints(c)} disabled={resolvingId === c.id} className="btn-primary flex-1 justify-center">
+                <p className="text-sm text-[var(--goi-muted)]">{c.location}</p>
+                <p className="text-xs text-[var(--goi-muted)] mt-1">{c.subdate}</p>
+                <div className="flex gap-3 mt-4">
+                  <button onClick={() => handleViewClick(c)} className="btn-muted flex-1 justify-center text-sm">Open</button>
+                  <button onClick={() => handleResolvedComplaints(c)} disabled={resolvingId === c.id} className="btn-primary flex-1 justify-center text-sm">
                     {resolvingId === c.id ? "Resolving..." : "Resolve"}
                   </button>
                 </div>
@@ -390,57 +395,72 @@ const StaffDashboard = () => {
               <div className="empty-state sm:col-span-2 lg:col-span-3">No assigned grievances are currently in progress.</div>
             )}
           </div>
-          <div className="flex justify-center items-center gap-4 mt-6">
-            <button onClick={() => setCurrentNewPage((prev) => Math.max(prev - 1, 1))} disabled={currentNewPage === 1} className="btn-muted px-4 py-2 disabled:opacity-50">Prev</button>
-            <span className="text-lg font-semibold">Page {currentNewPage} of {totalNewPages}</span>
-            <button onClick={() => setCurrentNewPage((prev) => (prev < totalNewPages ? prev + 1 : prev))} disabled={currentNewPage === totalNewPages} className="btn-muted px-4 py-2 disabled:opacity-50">Next</button>
-          </div>
+
+          {totalNewPages > 1 && (
+            <div className="flex justify-center items-center gap-4 mt-6">
+              <button onClick={() => setCurrentNewPage((prev) => Math.max(prev - 1, 1))} disabled={currentNewPage === 1} className="btn-muted btn-sm disabled:opacity-50">Prev</button>
+              <span className="text-sm font-semibold text-[var(--goi-muted)]">Page {currentNewPage} of {totalNewPages}</span>
+              <button onClick={() => setCurrentNewPage((prev) => (prev < totalNewPages ? prev + 1 : prev))} disabled={currentNewPage === totalNewPages} className="btn-muted btn-sm disabled:opacity-50">Next</button>
+            </div>
+          )}
         </section>
 
-        <section>
-          <div className="flex justify-between items-center mb-6 border-l-4 border-green-400 pl-3">
-            <h3 className="text-2xl font-bold text-gray-900">Resolved Grievances</h3>
+        {/* Resolved Grievances */}
+        <section className="surface-panel p-6">
+          <div className="flex items-center gap-3 mb-5 pb-4 border-b border-[var(--goi-line)]">
+            <div className="w-1 h-6 bg-emerald-400 rounded-full"></div>
+            <h2 className="text-xl font-bold text-[var(--goi-ink)]">Resolved Grievances</h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {paginatedResolvedComplaints.length > 0 ? paginatedResolvedComplaints.map((c) => (
-              <div key={c.id} className="premium-card p-6">
-                <div className="flex items-center gap-2">
-                  <h4 className="text-xl font-semibold text-gray-800">{c.category}</h4>
+              <div key={c.id} className="premium-card p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <h3 className="text-base font-bold text-[var(--goi-ink)]">{c.category}</h3>
                   <span className={statusClassName(c.status)}>{normalizeStatus(c.status)}</span>
                 </div>
-                <p className="text-gray-600 mt-2">{c.location}</p>
-                <p className="text-gray-500 text-sm mt-1">{c.update}</p>
-                <div className="flex gap-3 mt-5">
-                  <button onClick={() => handleViewClick(c)} className="btn-secondary flex-1 justify-center">Open</button>
+                <p className="text-sm text-[var(--goi-muted)]">{c.location}</p>
+                <p className="text-xs text-[var(--goi-muted)] mt-1">{c.update}</p>
+                <div className="mt-4">
+                  <button onClick={() => handleViewClick(c)} className="btn-secondary w-full justify-center text-sm">Open</button>
                 </div>
               </div>
             )) : (
               <div className="empty-state sm:col-span-2 lg:col-span-3">No resolved grievances yet.</div>
             )}
           </div>
-          <div className="flex justify-center items-center gap-4 mt-6">
-            <button onClick={() => setCurrentResolvedPage((prev) => Math.max(prev - 1, 1))} disabled={currentResolvedPage === 1} className="btn-muted px-4 py-2 disabled:opacity-50">Prev</button>
-            <span className="text-lg font-semibold">Page {currentResolvedPage} of {totalResolvedPages}</span>
-            <button onClick={() => setCurrentResolvedPage((prev) => prev < totalResolvedPages ? prev + 1 : prev)} disabled={currentResolvedPage === totalResolvedPages} className="btn-muted px-4 py-2 disabled:opacity-50">Next</button>
-          </div>
+
+          {totalResolvedPages > 1 && (
+            <div className="flex justify-center items-center gap-4 mt-6">
+              <button onClick={() => setCurrentResolvedPage((prev) => Math.max(prev - 1, 1))} disabled={currentResolvedPage === 1} className="btn-muted btn-sm disabled:opacity-50">Prev</button>
+              <span className="text-sm font-semibold text-[var(--goi-muted)]">Page {currentResolvedPage} of {totalResolvedPages}</span>
+              <button onClick={() => setCurrentResolvedPage((prev) => prev < totalResolvedPages ? prev + 1 : prev)} disabled={currentResolvedPage === totalResolvedPages} className="btn-muted btn-sm disabled:opacity-50">Next</button>
+            </div>
+          )}
         </section>
       </main>
 
-      <footer className="text-center py-6 mt-16 text-gray-600 text-sm border-t border-gray-300">
-        © {new Date().getFullYear()} Government of India Public Grievance Resolution Portal. &middot; Secured by ICP Blockchain
+      {/* ============ FOOTER ============ */}
+      <footer className="text-center py-4 bg-white border-t border-[var(--goi-line)] text-sm text-[var(--goi-muted)]">
+        &copy; {new Date().getFullYear()} Government of India Public Grievance Resolution Portal &middot; Secured by ICP Blockchain
       </footer>
 
-      {/* Complaint Details Modal with Blockchain Audit Trail */}
+      {/* ============ COMPLAINT DETAILS MODAL ============ */}
       {isViewOpen && selectedComplaint && (
         <div className="modal-backdrop" onClick={() => setIsViewOpen(false)} role="dialog" aria-modal="true" aria-labelledby="staff-complaint-details-title">
-          <div className="modal-shell w-full max-w-4xl h-[85vh] relative overflow-y-auto overscroll-contain p-6" onClick={(e) => e.stopPropagation()}>
-            <button className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-xl" onClick={() => setIsViewOpen(false)} aria-label="Close complaint details">✕</button>
-
+          <div className="modal-shell max-w-3xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
-              <h2 id="staff-complaint-details-title" className="text-3xl font-bold text-slate-900">
+              <h2 id="staff-complaint-details-title" className="text-xl font-bold text-[var(--goi-ink)]">
                 Grievance #{selectedComplaint.id}: {selectedComplaint.category}
               </h2>
-              <BlockchainBadge verified={verificationRecord?.verified} size="lg" />
+              <div className="flex items-center gap-3">
+                <BlockchainBadge verified={verificationRecord?.verified} size="lg" />
+                <button onClick={() => setIsViewOpen(false)} className="text-[var(--goi-muted)] hover:text-[var(--goi-ink)] transition-colors" aria-label="Close">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
             </div>
 
             <div className="details-grid mb-6">
@@ -452,14 +472,14 @@ const StaffDashboard = () => {
               <p><strong>Last Update:</strong> {selectedComplaint.update}</p>
             </div>
 
-            <div className="mb-6">
-              <p className="mb-2"><strong>Location:</strong> {selectedComplaint.location}</p>
-              <p className="mb-2"><strong>Description:</strong> {selectedComplaint.description}</p>
+            <div className="mb-6 space-y-2">
+              <p><strong>Location:</strong> {selectedComplaint.location}</p>
+              <p><strong>Description:</strong> {selectedComplaint.description}</p>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-white p-6">
+            <div className="rounded-lg border border-[var(--goi-line)] bg-white p-5">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-slate-900">Immutable Audit Trail</h3>
+                <h3 className="text-base font-bold text-[var(--goi-ink)]">Immutable Audit Trail</h3>
                 {verificationRecord?.verified && (
                   <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -471,7 +491,7 @@ const StaffDashboard = () => {
               </div>
               <AuditTimeline events={auditTrail} loading={isLoadingAuditTrail} />
               {verificationRecord?.verified && (
-                <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-2 gap-3 text-xs text-slate-500">
+                <div className="mt-4 pt-4 border-t border-[var(--goi-line)] grid grid-cols-2 gap-3 text-xs text-[var(--goi-muted)]">
                   {verificationRecord.blockId && <p><strong>Block ID:</strong> {verificationRecord.blockId}</p>}
                   {verificationRecord.timestamp && <p><strong>Verified At:</strong> {new Date(verificationRecord.timestamp).toLocaleString()}</p>}
                   {verificationRecord.canisterId && <p><strong>Canister:</strong> {verificationRecord.canisterId}</p>}
@@ -482,19 +502,20 @@ const StaffDashboard = () => {
 
             {selectedComplaint.photo && (
               <div className="mt-6 flex justify-center">
-                <img src={apiUrl(selectedComplaint.photo)} alt={selectedComplaint.category} className="max-w-full max-h-[400px] rounded-lg shadow-md object-contain" />
+                <img src={apiUrl(selectedComplaint.photo)} alt={selectedComplaint.category} className="max-w-full max-h-[350px] rounded-lg shadow-md object-contain" />
               </div>
             )}
           </div>
         </div>
       )}
 
-      {/* Performance Modal */}
+      {/* ============ PERFORMANCE MODAL ============ */}
       {showPerformance && (
         <div className="modal-backdrop" onClick={() => setShowPerformance(false)} role="dialog" aria-modal="true" aria-labelledby="performance-title">
-          <div className="modal-shell max-h-[88vh] w-full max-w-3xl overflow-y-auto overscroll-contain p-8" onClick={(e) => e.stopPropagation()}>
-            <h2 id="performance-title" className="text-3xl font-bold text-teal-900 mb-6 text-center">Officer Performance Audit</h2>
-            <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-5">
+          <div className="modal-shell max-w-3xl" onClick={(e) => e.stopPropagation()}>
+            <h2 id="performance-title" className="text-xl font-bold text-[var(--goi-ink)] mb-6 text-center">Officer Performance Audit</h2>
+            
+            <div className="mb-6 grid grid-cols-2 sm:grid-cols-5 gap-3">
               {[
                 ["Weighted Score", `${performanceMetrics.weightedScore}/100`],
                 ["Confidence", `${performanceMetrics.confidence}%`],
@@ -502,36 +523,40 @@ const StaffDashboard = () => {
                 ["Resolved", performanceMetrics.resolved],
                 ["Avg Resolution", `${performanceMetrics.averageResolutionHours} hr`],
               ].map(([label, value]) => (
-                <div key={label} className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-center">
-                  <div className="text-2xl font-extrabold text-teal-900">{value}</div>
-                  <div className="mt-1 text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</div>
+                <div key={label} className="rounded-lg border border-[var(--goi-line)] bg-[var(--goi-deep)]/5 p-4 text-center">
+                  <div className="text-2xl font-black text-[var(--goi-deep)]">{value}</div>
+                  <div className="mt-1 text-[0.65rem] font-bold uppercase tracking-wide text-[var(--goi-muted)]">{label}</div>
                 </div>
               ))}
             </div>
-            <p className="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+
+            <p className="mb-5 rounded-lg border border-[var(--goi-line)] bg-white px-4 py-3 text-sm text-[var(--goi-muted)]">
               Score is confidence-adjusted for small sample sizes and uses only auditable grievance records from the ICP ledger.
             </p>
-            <ResponsiveContainer width="100%" height={320}>
+
+            <ResponsiveContainer width="100%" height={300}>
               <BarChart data={performanceMetrics.metrics}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis domain={[0, 100]} />
-                <Tooltip />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
+                <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0' }} />
                 <Legend />
-                <Bar dataKey="score" name="KPI Score" fill="#134e4a" />
+                <Bar dataKey="score" name="KPI Score" fill="var(--goi-deep)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
+
             <div className="mt-6 space-y-3">
               {performanceMetrics.metrics.map((metric) => (
-                <div key={metric.name} className="flex flex-col gap-1 rounded-lg border border-slate-200 p-3 sm:flex-row sm:items-center sm:justify-between">
+                <div key={metric.name} className="flex flex-col gap-1 rounded-lg border border-[var(--goi-line)] p-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className="font-semibold text-slate-900">{metric.name}</p>
-                    <p className="text-sm text-slate-500">{metric.detail}</p>
+                    <p className="font-semibold text-[var(--goi-ink)] text-sm">{metric.name}</p>
+                    <p className="text-xs text-[var(--goi-muted)]">{metric.detail}</p>
                   </div>
-                  <p className="text-sm font-bold text-teal-900">{metric.score}/100 - weight {metric.weight}%</p>
+                  <p className="text-sm font-bold text-[var(--goi-deep)] whitespace-nowrap">{metric.score}/100 &middot; w{metric.weight}%</p>
                 </div>
               ))}
             </div>
+
             <div className="flex justify-center mt-6">
               <button className="btn-primary" onClick={() => setShowPerformance(false)}>Close</button>
             </div>

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import Logo from "./Logo";
 import { useNavigate } from "react-router-dom";
+import { FaBars, FaTimes } from "react-icons/fa";
+import { FiShield } from "react-icons/fi";
 import axios from "axios";
 import {
   apiUrl,
@@ -54,7 +56,6 @@ const AdminDashboard = () => {
     fetchCounts();
   }, []);
 
-  // Fetch ICP diagnostics for governance dashboard
   useEffect(() => {
     const loadDiagnostics = async () => {
       try {
@@ -73,7 +74,7 @@ const AdminDashboard = () => {
           });
         }
       } catch {
-        // Silently fail - diagnostics may not be available
+        // Silently fail
       } finally {
         setIcpLoading(false);
       }
@@ -164,201 +165,178 @@ const AdminDashboard = () => {
     : 100;
 
   return (
-    <div className="app-shell min-h-screen font-sans flex flex-col justify-between">
-      <div className="premium-nav fixed top-0 left-0 w-full min-h-24 flex flex-col sm:flex-row items-center justify-between px-4 sm:px-8 z-50">
-        <div className="w-full sm:w-auto flex items-center justify-between">
-          <Logo />
-          <div className="sm:hidden">
-            <button onClick={() => setMenuOpen(!menuOpen)} className="p-2 rounded-md bg-slate-100 text-slate-800 hover:bg-slate-200" aria-label="Toggle navigation menu" aria-expanded={menuOpen}>
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-          </div>
-        </div>
-        <div className={`w-full sm:w-auto flex flex-col sm:flex-row items-center gap-4 mt-4 sm:mt-0 ${menuOpen ? "block" : "hidden sm:flex"}`}>
-          <div className="flex items-center gap-2 mr-2 border-r border-slate-200 pr-3">
+    <div className="min-h-screen flex flex-col">
+      {/* ============ NAVBAR ============ */}
+      <nav className="premium-nav">
+        <Logo />
+        <button
+          className="sm:hidden p-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 transition-colors"
+          onClick={() => setMenuOpen(!menuOpen)}
+          aria-label="Toggle navigation"
+        >
+          {menuOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
+        </button>
+        <div className={`${menuOpen ? "flex" : "hidden"} sm:flex flex-col sm:flex-row items-center gap-3 absolute sm:relative top-full left-0 right-0 bg-white sm:bg-transparent p-4 sm:p-0 shadow-lg sm:shadow-none border-b sm:border-0 z-50`}>
+          <div className="flex items-center gap-2 border-r border-[var(--goi-line)] pr-3">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={icpHealth.enabled ? "#047857" : "#b45309"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               <polyline points="9 12 11 14 15 10" />
             </svg>
             <span className={`text-xs font-semibold uppercase tracking-wide ${icpHealth.enabled ? "text-emerald-700" : "text-amber-700"}`}>
-              {icpHealth.enabled ? "ICP Active" : "ICP Offline"}
+              {icpLoading ? "..." : icpHealth.enabled ? "ICP Active" : "ICP Offline"}
             </span>
           </div>
           <div className="text-center sm:text-right">
-            <p className="text-sm text-gray-600">Logged in as</p>
-            <p className="font-semibold text-gray-800">Admin</p>
+            <p className="text-xs text-[var(--goi-muted)]">Logged in as</p>
+            <p className="font-semibold text-[var(--goi-ink)]">Admin</p>
           </div>
-          <button className="btn-secondary" onClick={() => navigate("/heatmap")}>Heatmap</button>
-          <button className="btn-secondary" onClick={() => navigate("/all-complaints")}>All Grievances</button>
-          <button className="btn-secondary" onClick={() => navigate("/invite-staff")}>Invite Staff</button>
-          <button className="btn-primary" onClick={() => navigate("/icp-diagnostics")}>Governance Integrity</button>
-          <button className="btn-muted" onClick={handleLogout}>Logout</button>
+          <button className="btn-secondary btn-sm" onClick={() => navigate("/heatmap")}>Heatmap</button>
+          <button className="btn-secondary btn-sm" onClick={() => navigate("/all-complaints")}>All Grievances</button>
+          <button className="btn-secondary btn-sm" onClick={() => navigate("/invite-staff")}>Invite Staff</button>
+          <button className="btn-primary btn-sm" onClick={() => navigate("/icp-diagnostics")}>Governance</button>
+          <button className="btn-muted btn-sm" onClick={handleLogout}>Logout</button>
         </div>
-      </div>
+      </nav>
 
-      <main className="container mx-auto px-6 py-12 max-w-7xl pt-32 space-y-12 flex-grow">
-        <div className="text-center">
-          <h2 className="text-5xl sm:text-6xl md:text-7xl font-extrabold text-slate-950 leading-tight tracking-tight">Welcome, {user.name}</h2>
-          <p className="text-gray-700 text-lg italic">Manage departmental officers, assign grievances, review citizen feedback, and monitor system integrity.</p>
+      {/* ============ MAIN CONTENT ============ */}
+      <main className="flex-1 page-surface pt-28 pb-12 space-y-10">
+        {/* Welcome Section */}
+        <div>
+          <span className="section-kicker">Admin Dashboard</span>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[var(--goi-ink)] mt-2 leading-tight">Welcome, {user.name}</h1>
+          <p className="text-lg text-[var(--goi-muted)] mt-2">Manage departmental officers, assign grievances, review citizen feedback, and monitor system integrity.</p>
         </div>
 
-        {/* Governance Integrity Metrics */}
+        {/* Governance Metrics */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="premium-card p-5 flex items-center gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-100">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#047857" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                <polyline points="9 12 11 14 15 10" />
-              </svg>
+          {[
+            { label: "Verification Rate", value: icpLoading ? "..." : `${verificationRate}%`, icon: "shield", color: "emerald" },
+            { label: "Blockchain Writes", value: icpLoading ? "..." : icpHealth.totalQueued, icon: "lock", color: "blue" },
+            { label: "Write Failures", value: icpLoading ? "..." : icpHealth.totalFailures, icon: "x", color: "amber" },
+            { label: "System Status", value: icpLoading ? "..." : icpHealth.enabled ? "Operational" : "Check Config", icon: "clock", color: icpHealth.enabled ? "emerald" : "red" },
+          ].map((item) => (
+            <div key={item.label} className="premium-card p-5 flex items-center gap-4">
+              <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${item.color === "emerald" ? "bg-emerald-100" : item.color === "blue" ? "bg-blue-100" : item.color === "amber" ? "bg-amber-100" : "bg-red-100"}`}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={item.color === "emerald" ? "#047857" : item.color === "blue" ? "#0369a1" : "#b45309"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  {item.icon === "shield" && <><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><polyline points="9 12 11 14 15 10" /></>}
+                  {item.icon === "lock" && <><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></>}
+                  {item.icon === "x" && <><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></>}
+                  {item.icon === "clock" && <><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></>}
+                </svg>
+              </div>
+              <div>
+                <p className="text-[0.65rem] font-bold uppercase tracking-wide text-[var(--goi-muted)]">{item.label}</p>
+                <p className="text-xl font-black text-[var(--goi-ink)]">{item.value}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Verification Rate</p>
-              <p className="text-2xl font-extrabold text-slate-950">{icpLoading ? "..." : `${verificationRate}%`}</p>
-            </div>
-          </div>
-          <div className="premium-card p-5 flex items-center gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-100">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0369a1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Blockchain Writes</p>
-              <p className="text-2xl font-extrabold text-slate-950">{icpLoading ? "..." : icpHealth.totalQueued}</p>
-            </div>
-          </div>
-          <div className="premium-card p-5 flex items-center gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-amber-100">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#b45309" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Write Failures</p>
-              <p className="text-2xl font-extrabold text-slate-950">{icpLoading ? "..." : icpHealth.totalFailures}</p>
-            </div>
-          </div>
-          <div className="premium-card p-5 flex items-center gap-4">
-            <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${icpHealth.enabled ? "bg-emerald-100" : "bg-red-100"}`}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={icpHealth.enabled ? "#047857" : "#dc2626"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">System Status</p>
-              <p className="text-lg font-extrabold text-slate-950">{icpLoading ? "..." : icpHealth.enabled ? "Operational" : "Check Config"}</p>
-            </div>
-          </div>
+          ))}
         </div>
 
-        <hr className="border-gray-200" />
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           {[
             { title: "Total Grievances", count: (parseInt(counts.resolved, 10) || 0) + (parseInt(counts.in_progress, 10) || 0) + (parseInt(counts.pending, 10) || 0) },
             { title: "In Progress", count: counts.in_progress },
             { title: "Pending", count: counts.pending },
           ].map((s) => (
-            <div key={s.title} className="premium-card metric-card px-3 py-8 flex flex-col items-center text-slate-900">
-              <div className="text-4xl font-extrabold">{s.count}</div>
-              <div className="mt-2 font-semibold text-lg text-center">{s.title}</div>
+            <div key={s.title} className="premium-card metric-card p-6 flex flex-col items-center">
+              <div className="text-4xl font-black text-[var(--goi-ink)] tabular-nums">{s.count}</div>
+              <div className="mt-1 font-semibold text-sm text-[var(--goi-muted)]">{s.title}</div>
             </div>
           ))}
         </div>
 
         {errorMessage && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-medium text-red-800 shadow-sm">{errorMessage}</div>
+          <div className="error-message">{errorMessage}</div>
         )}
 
-        <div className="surface-panel p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-3xl font-bold text-gray-900">New Grievances</h3>
-          </div>
-          <div className="table-shell overflow-x-auto">
-            <table className="min-w-full divide-y divide-blue-200">
-              <thead className="bg-white">
+        {/* New Grievances */}
+        <section className="surface-panel p-6">
+          <h2 className="text-xl font-bold text-[var(--goi-ink)] mb-5">New Grievances</h2>
+          <div className="table-shell">
+            <table className="w-full">
+              <thead>
                 <tr>
                   {["ID", "Category", "Location", "Status", "Assigned To", "Actions"].map((h) => (
-                    <th key={h} className="p-4 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">{h}</th>
+                    <th key={h}>{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-blue-200 bg-white">
+              <tbody>
                 {paginatedNewComplaints.length > 0 ? (
                   paginatedNewComplaints.map((c) => (
-                    <tr key={c.id} className="transition">
-                      <td className="p-4 font-bold">{c.id}</td>
-                      <td className="p-4">{c.category}</td>
-                      <td className="p-4">{c.location}</td>
-                      <td className="p-4"><span className={statusClassName(c.status)}>{normalizeStatus(c.status)}</span></td>
-                      <td className="p-4">{c.assignedTo || "Unassigned"}</td>
-                      <td className="p-4">
-                        <button className="btn-primary px-3 py-1.5 text-sm" onClick={() => handleAssignClick(c)}>Assign</button>
+                    <tr key={c.id}>
+                      <td className="font-bold">#{c.id}</td>
+                      <td>{c.category}</td>
+                      <td>{c.location}</td>
+                      <td><span className={statusClassName(c.status)}>{normalizeStatus(c.status)}</span></td>
+                      <td>{c.assignedTo || <span className="text-[var(--goi-muted)]">Unassigned</span>}</td>
+                      <td>
+                        <button className="btn-primary btn-sm" onClick={() => handleAssignClick(c)}>Assign</button>
                       </td>
                     </tr>
                   ))
                 ) : isLoadingNew ? (
-                  <tr><td colSpan="6" className="text-center p-6 text-gray-500">Loading new grievances...</td></tr>
+                  <tr><td colSpan="6" className="text-center py-8 text-[var(--goi-muted)]">Loading new grievances...</td></tr>
                 ) : (
-                  <tr><td colSpan="6" className="text-center p-4 text-gray-500">No grievances found.</td></tr>
+                  <tr><td colSpan="6" className="text-center py-8 text-[var(--goi-muted)]">No new grievances.</td></tr>
                 )}
               </tbody>
             </table>
           </div>
-          <div className="flex justify-center items-center gap-4 mt-6">
-            <button onClick={() => setCurrentNewPage((p) => Math.max(p - 1, 1))} disabled={currentNewPage === 1} className="btn-muted px-4 py-2 disabled:opacity-50">Prev</button>
-            <span className="text-lg font-semibold">Page {currentNewPage} of {totalNewPages}</span>
-            <button onClick={() => setCurrentNewPage((p) => Math.min(p + 1, totalNewPages))} disabled={currentNewPage === totalNewPages} className="btn-muted px-4 py-2 disabled:opacity-50">Next</button>
-          </div>
-        </div>
+          {totalNewPages > 1 && (
+            <div className="flex justify-center items-center gap-4 mt-5">
+              <button onClick={() => setCurrentNewPage((p) => Math.max(p - 1, 1))} disabled={currentNewPage === 1} className="btn-muted btn-sm disabled:opacity-50">Prev</button>
+              <span className="text-sm font-semibold text-[var(--goi-muted)]">Page {currentNewPage} of {totalNewPages}</span>
+              <button onClick={() => setCurrentNewPage((p) => Math.min(p + 1, totalNewPages))} disabled={currentNewPage === totalNewPages} className="btn-muted btn-sm disabled:opacity-50">Next</button>
+            </div>
+          )}
+        </section>
 
-        <div className="surface-panel p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-3xl font-bold text-gray-900">Assigned Grievances</h3>
-          </div>
-          <div className="table-shell overflow-x-auto">
-            <table className="min-w-full divide-y divide-blue-200">
-              <thead className="bg-white">
+        {/* Assigned Grievances */}
+        <section className="surface-panel p-6">
+          <h2 className="text-xl font-bold text-[var(--goi-ink)] mb-5">Assigned Grievances</h2>
+          <div className="table-shell">
+            <table className="w-full">
+              <thead>
                 <tr>
                   {["ID", "Category", "Location", "Status", "Assigned To"].map((h) => (
-                    <th key={h} className="p-4 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">{h}</th>
+                    <th key={h}>{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-blue-200 bg-white">
+              <tbody>
                 {paginatedAssignedComplaints.length > 0 ? (
                   paginatedAssignedComplaints.map((c) => (
-                    <tr key={c.id} className="transition">
-                      <td className="p-4 font-bold">{c.id}</td>
-                      <td className="p-4">{c.category}</td>
-                      <td className="p-4">{c.location}</td>
-                      <td className="p-4"><span className={statusClassName(c.status)}>{normalizeStatus(c.status)}</span></td>
-                      <td className="p-4">{c.assignedTo}</td>
+                    <tr key={c.id}>
+                      <td className="font-bold">#{c.id}</td>
+                      <td>{c.category}</td>
+                      <td>{c.location}</td>
+                      <td><span className={statusClassName(c.status)}>{normalizeStatus(c.status)}</span></td>
+                      <td>{c.assignedTo || <span className="text-[var(--goi-muted)]">Unassigned</span>}</td>
                     </tr>
                   ))
                 ) : isLoadingAssigned ? (
-                  <tr><td colSpan="5" className="text-center p-6 text-gray-500">Loading assigned grievances...</td></tr>
+                  <tr><td colSpan="5" className="text-center py-8 text-[var(--goi-muted)]">Loading assigned grievances...</td></tr>
                 ) : (
-                  <tr><td colSpan="6" className="text-center p-4 text-gray-500">No grievances found.</td></tr>
+                  <tr><td colSpan="5" className="text-center py-8 text-[var(--goi-muted)]">No assigned grievances.</td></tr>
                 )}
               </tbody>
             </table>
           </div>
-          <div className="flex justify-center items-center gap-4 mt-6">
-            <button onClick={() => setCurrentAssignedPage((p) => Math.max(p - 1, 1))} disabled={currentAssignedPage === 1} className="btn-muted px-4 py-2 disabled:opacity-50">Prev</button>
-            <span className="text-lg font-semibold">Page {currentAssignedPage} of {totalAssignedPages}</span>
-            <button onClick={() => setCurrentAssignedPage((p) => Math.min(p + 1, totalAssignedPages))} disabled={currentAssignedPage === totalAssignedPages} className="btn-muted px-4 py-2 disabled:opacity-50">Next</button>
-          </div>
-        </div>
+          {totalAssignedPages > 1 && (
+            <div className="flex justify-center items-center gap-4 mt-5">
+              <button onClick={() => setCurrentAssignedPage((p) => Math.max(p - 1, 1))} disabled={currentAssignedPage === 1} className="btn-muted btn-sm disabled:opacity-50">Prev</button>
+              <span className="text-sm font-semibold text-[var(--goi-muted)]">Page {currentAssignedPage} of {totalAssignedPages}</span>
+              <button onClick={() => setCurrentAssignedPage((p) => Math.min(p + 1, totalAssignedPages))} disabled={currentAssignedPage === totalAssignedPages} className="btn-muted btn-sm disabled:opacity-50">Next</button>
+            </div>
+          )}
+        </section>
       </main>
 
-      <footer className="text-center py-4 bg-white shadow-inner text-gray-600 text-sm">
-        © {new Date().getFullYear()} Government of India Public Grievance Resolution Portal. &middot; Secured by ICP Blockchain
+      {/* ============ FOOTER ============ */}
+      <footer className="text-center py-4 bg-white border-t border-[var(--goi-line)] text-sm text-[var(--goi-muted)]">
+        &copy; {new Date().getFullYear()} Government of India Public Grievance Resolution Portal &middot; Secured by ICP Blockchain
       </footer>
     </div>
   );
