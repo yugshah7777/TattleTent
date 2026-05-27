@@ -32,9 +32,9 @@ export const saveComplaintToDB = async (newComplaint) => {
       `INSERT INTO complaints 
         (title, description, status, photo, category, location, dept_id, priority, user_id, longitude, latitude, geolocation)
        VALUES (
-        $1, $2, 'New', $3, $4, $5, $6, $7, $8, $9, $10,
+        $1, $2, 'New', $3, $4, $5, $6, $7, $8, $9::double precision, $10::double precision,
         CASE
-          WHEN $9 IS NOT NULL AND $10 IS NOT NULL
+          WHEN $9::double precision IS NOT NULL AND $10::double precision IS NOT NULL
           THEN ST_SetSRID(ST_MakePoint($9::double precision, $10::double precision), 4326)
           ELSE NULL
         END
@@ -49,8 +49,8 @@ export const saveComplaintToDB = async (newComplaint) => {
         dept_id,
         newComplaint.priority || "Low",
         newComplaint.user_id,
-        newComplaint.longitude,
-        newComplaint.latitude,
+        newComplaint.longitude || null,
+        newComplaint.latitude || null,
       ]
     );
 

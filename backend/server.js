@@ -37,6 +37,15 @@ app.use('/api/auth', authRoutes);
 // Serve images under /temp
 app.use("/temp", express.static(path.join(process.cwd(), "public/temp")));
 
+// Global error handler (required for Express v5 async errors)
+app.use((err, req, res, next) => {
+  console.error("❌ Unhandled error:", err);
+  const statusCode = err.statusCode || 500;
+  res.status(statusCode).json({
+    success: false,
+    message: err.message || "Internal server error",
+  });
+});
 
 const PORT = process.env.PORT || 5000;
 

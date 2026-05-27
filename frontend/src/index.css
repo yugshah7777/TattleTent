@@ -426,6 +426,19 @@ label {
   padding: 2rem;
 }
 
+/* Allow Tailwind width overrides to take effect (higher specificity) */
+.modal-shell.max-w-2xl {
+  max-width: min(88vw, 672px) !important;
+}
+
+.modal-shell.max-w-3xl {
+  max-width: min(88vw, 768px) !important;
+}
+
+.modal-shell.max-w-4xl {
+  max-width: min(92vw, 896px) !important;
+}
+
 /* ============= EMPTY & ERROR STATES ============= */
 .empty-state {
   border: 1.5px dashed rgba(15, 23, 42, 0.15);

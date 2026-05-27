@@ -208,43 +208,72 @@ const AdminDashboard = () => {
         </div>
 
         {/* Governance Metrics */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            { label: "Verification Rate", value: icpLoading ? "..." : `${verificationRate}%`, icon: "shield", color: "emerald" },
-            { label: "Blockchain Writes", value: icpLoading ? "..." : icpHealth.totalQueued, icon: "lock", color: "blue" },
-            { label: "Write Failures", value: icpLoading ? "..." : icpHealth.totalFailures, icon: "x", color: "amber" },
-            { label: "System Status", value: icpLoading ? "..." : icpHealth.enabled ? "Operational" : "Check Config", icon: "clock", color: icpHealth.enabled ? "emerald" : "red" },
-          ].map((item) => (
-            <div key={item.label} className="premium-card p-5 flex items-center gap-4">
-              <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${item.color === "emerald" ? "bg-emerald-100" : item.color === "blue" ? "bg-blue-100" : item.color === "amber" ? "bg-amber-100" : "bg-red-100"}`}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={item.color === "emerald" ? "#047857" : item.color === "blue" ? "#0369a1" : "#b45309"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  {item.icon === "shield" && <><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><polyline points="9 12 11 14 15 10" /></>}
-                  {item.icon === "lock" && <><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></>}
-                  {item.icon === "x" && <><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></>}
-                  {item.icon === "clock" && <><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></>}
-                </svg>
-              </div>
-              <div>
-                <p className="text-[0.65rem] font-bold uppercase tracking-wide text-[var(--goi-muted)]">{item.label}</p>
-                <p className="text-xl font-black text-[var(--goi-ink)]">{item.value}</p>
-              </div>
+        <section>
+          <div className="flex items-center gap-3 mb-5 pb-4 border-b border-[var(--goi-line)]">
+            <div className="w-1 h-6 bg-[var(--goi-deep)] rounded-full"></div>
+            <div>
+              <span className="section-kicker">System Integrity</span>
+              <h2 className="text-xl font-bold text-[var(--goi-ink)]">Governance & Audit Metrics</h2>
             </div>
-          ))}
-        </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {[
+              { label: "Verification Rate", value: icpLoading ? "..." : `${verificationRate}%`, icon: "shield", color: "emerald", textColor: "text-emerald-800" },
+              { label: "Blockchain Writes", value: icpLoading ? "..." : icpHealth.totalQueued, icon: "lock", color: "blue", textColor: "text-blue-800" },
+              { label: "Write Failures", value: icpLoading ? "..." : icpHealth.totalFailures, icon: "x-circle", color: "amber", textColor: "text-amber-800" },
+              { label: "System Status", value: icpLoading ? "..." : icpHealth.enabled ? "Operational" : "Check Config", icon: "activity", color: icpHealth.enabled ? "emerald" : "red", textColor: icpHealth.enabled ? "text-emerald-800" : "text-red-800" },
+            ].map((item) => (
+              <div key={item.label} className="premium-card p-5 flex items-center gap-4 min-h-[90px]">
+                <div style={{ width: '52px', height: '52px' }} className={`shrink-0 flex items-center justify-center rounded-xl ${
+                  item.color === "emerald" ? "bg-emerald-50 border border-emerald-200/50" : 
+                  item.color === "blue" ? "bg-blue-50 border border-blue-200/50" : 
+                  item.color === "amber" ? "bg-amber-50 border border-amber-200/50" : 
+                  "bg-red-50 border border-red-200/50"
+                }`}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={
+                    item.color === "emerald" ? "#047857" : 
+                    item.color === "blue" ? "#0369a1" : 
+                    item.color === "amber" ? "#b45309" : 
+                    "#dc2626"
+                  } strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    {item.icon === "shield" && <><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><polyline points="9 12 11 14 15 10" /></>}
+                    {item.icon === "lock" && <><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></>}
+                    {item.icon === "x-circle" && <><circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></>}
+                    {item.icon === "activity" && <><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></>}
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[0.65rem] font-bold uppercase tracking-wider text-[var(--goi-muted)]">{item.label}</p>
+                  <p className={`text-xl font-black ${item.textColor} tabular-nums leading-tight mt-0.5`}>{item.value}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          {[
-            { title: "Total Grievances", count: (parseInt(counts.resolved, 10) || 0) + (parseInt(counts.in_progress, 10) || 0) + (parseInt(counts.pending, 10) || 0) },
-            { title: "In Progress", count: counts.in_progress },
-            { title: "Pending", count: counts.pending },
-          ].map((s) => (
-            <div key={s.title} className="premium-card metric-card p-6 flex flex-col items-center">
-              <div className="text-4xl font-black text-[var(--goi-ink)] tabular-nums">{s.count}</div>
-              <div className="mt-1 font-semibold text-sm text-[var(--goi-muted)]">{s.title}</div>
+        <section>
+          <div className="flex items-center gap-3 mb-5 pb-4 border-b border-[var(--goi-line)]">
+            <div className="w-1 h-6 bg-[var(--goi-saffron)] rounded-full"></div>
+            <div>
+              <span className="section-kicker">Dashboard Overview</span>
+              <h2 className="text-xl font-bold text-[var(--goi-ink)]">Grievance Statistics</h2>
             </div>
-          ))}
-        </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            {[
+              { title: "Total Grievances", count: (parseInt(counts.resolved, 10) || 0) + (parseInt(counts.in_progress, 10) || 0) + (parseInt(counts.pending, 10) || 0), accent: "bg-[var(--goi-deep)]" },
+              { title: "In Progress", count: counts.in_progress, accent: "bg-[var(--goi-blue)]" },
+              { title: "Pending", count: counts.pending, accent: "bg-[var(--goi-saffron)]" },
+            ].map((s) => (
+              <div key={s.title} className="premium-card p-6 flex flex-col items-center justify-center min-h-[120px] relative overflow-hidden">
+                <div className={`absolute top-0 left-0 right-0 h-1 ${s.accent} opacity-80`}></div>
+                <div className="text-4xl font-black text-[var(--goi-ink)] tabular-nums leading-none">{s.count}</div>
+                <div className="mt-2 font-semibold text-sm text-[var(--goi-muted)] text-center">{s.title}</div>
+              </div>
+            ))}
+          </div>
+        </section>
 
         {errorMessage && (
           <div className="error-message">{errorMessage}</div>

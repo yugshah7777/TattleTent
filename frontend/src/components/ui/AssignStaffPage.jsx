@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from "recharts";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from "recharts";
 import Logo from "./Logo"
 import axios from "axios";
 import { apiUrl, authHeaders, getStoredUser } from "../../lib/api";
@@ -244,7 +244,7 @@ const AssignStaffPage = () => {
           title={`${selectedStaff.name} - Performance Audit`}
           onClose={() => setSelectedStaff(null)}
         >
-          <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-5">
+          <div className="mb-6 grid grid-cols-2 sm:grid-cols-5 gap-4">
             {[
               ["Score", `${selectedStaff.performance.score}/100`],
               ["Confidence", `${selectedStaff.performance.confidence}%`],
@@ -252,27 +252,31 @@ const AssignStaffPage = () => {
               ["Resolved", selectedStaff.performance.resolved],
               ["Avg Time", `${selectedStaff.performance.averageResolutionHours} hr`],
             ].map(([label, value]) => (
-              <div key={label} className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-center">
-                <div className="text-xl font-extrabold text-teal-900">{value}</div>
-                <div className="mt-1 text-[11px] font-bold uppercase tracking-wide text-slate-500">{label}</div>
+              <div key={label} className="rounded-xl border border-[var(--goi-line)] bg-gradient-to-b from-[var(--goi-deep)]/5 to-white p-5 text-center flex flex-col items-center justify-center min-h-[110px]">
+                <div className="text-2xl font-black text-[var(--goi-deep)] tabular-nums leading-none">{value}</div>
+                <div className="text-[0.65rem] font-bold uppercase tracking-wider text-[var(--goi-muted)] mt-1.5">{label}</div>
               </div>
             ))}
           </div>
-          <p className="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-            Assignment audit is weighted by priority, SLA adherence, documentation completeness, efficiency, and consistency.
-          </p>
-          <div style={{ width: "100%", height: 320 }}>
+          <div className="mb-6 rounded-xl border border-[var(--goi-line)] bg-white/80 px-5 py-4">
+            <p className="text-sm text-[var(--goi-muted)] flex items-center gap-2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              Assignment audit is weighted by priority, SLA adherence, documentation completeness, efficiency, and consistency.
+            </p>
+          </div>
+          <div style={{ width: "100%", height: 300 }} className="mt-4">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={selectedStaff.performance.metrics}
                 layout="vertical"
-                margin={{ top: 20, right: 30, left: 40, bottom: 20 }}
+                margin={{ top: 5, right: 20, left: 100, bottom: 5 }}
               >
-                <XAxis type="number" />
-                <YAxis dataKey="name" type="category" width={118} />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="score" name="KPI Score" fill="#0f4c45" barSize={24} />
+                <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 12, fill: '#5f6b7a' }} axisLine={{ stroke: '#e2e8f0' }} tickLine={false} />
+                <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12, fill: '#0b1220' }} axisLine={false} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
+                <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }} />
+                <Legend wrapperStyle={{ fontSize: '12px', fontWeight: 600 }} />
+                <Bar dataKey="score" name="KPI Score" fill="var(--goi-deep)" radius={[0, 6, 6, 0]} barSize={24} maxBarSize={36} />
               </BarChart>
             </ResponsiveContainer>
           </div>

@@ -512,10 +512,13 @@ const StaffDashboard = () => {
       {/* ============ PERFORMANCE MODAL ============ */}
       {showPerformance && (
         <div className="modal-backdrop" onClick={() => setShowPerformance(false)} role="dialog" aria-modal="true" aria-labelledby="performance-title">
-          <div className="modal-shell max-w-3xl" onClick={(e) => e.stopPropagation()}>
-            <h2 id="performance-title" className="text-xl font-bold text-[var(--goi-ink)] mb-6 text-center">Officer Performance Audit</h2>
+          <div className="modal-shell max-w-4xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-[var(--goi-line)]">
+              <h2 id="performance-title" className="text-xl font-bold text-[var(--goi-ink)]">Officer Performance Audit</h2>
+              <button onClick={() => setShowPerformance(false)} className="btn-muted btn-sm" aria-label="Close">Close</button>
+            </div>
             
-            <div className="mb-6 grid grid-cols-2 sm:grid-cols-5 gap-3">
+            <div className="mb-6 grid grid-cols-2 sm:grid-cols-5 gap-4">
               {[
                 ["Weighted Score", `${performanceMetrics.weightedScore}/100`],
                 ["Confidence", `${performanceMetrics.confidence}%`],
@@ -523,42 +526,48 @@ const StaffDashboard = () => {
                 ["Resolved", performanceMetrics.resolved],
                 ["Avg Resolution", `${performanceMetrics.averageResolutionHours} hr`],
               ].map(([label, value]) => (
-                <div key={label} className="rounded-lg border border-[var(--goi-line)] bg-[var(--goi-deep)]/5 p-4 text-center">
-                  <div className="text-2xl font-black text-[var(--goi-deep)]">{value}</div>
-                  <div className="mt-1 text-[0.65rem] font-bold uppercase tracking-wide text-[var(--goi-muted)]">{label}</div>
+                <div key={label} className="rounded-xl border border-[var(--goi-line)] bg-gradient-to-b from-[var(--goi-deep)]/5 to-white p-5 text-center flex flex-col items-center justify-center min-h-[110px]">
+                  <div className="text-2xl font-black text-[var(--goi-deep)] tabular-nums leading-none">{value}</div>
+                  <div className="text-[0.65rem] font-bold uppercase tracking-wider text-[var(--goi-muted)] mt-1.5">{label}</div>
                 </div>
               ))}
             </div>
 
-            <p className="mb-5 rounded-lg border border-[var(--goi-line)] bg-white px-4 py-3 text-sm text-[var(--goi-muted)]">
-              Score is confidence-adjusted for small sample sizes and uses only auditable grievance records from the ICP ledger.
-            </p>
+            <div className="mb-6 rounded-xl border border-[var(--goi-line)] bg-white/80 px-5 py-4">
+              <p className="text-sm text-[var(--goi-muted)] flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                Score is confidence-adjusted for small sample sizes and uses only auditable grievance records from the ICP ledger.
+              </p>
+            </div>
 
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={performanceMetrics.metrics}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
-                <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0' }} />
-                <Legend />
-                <Bar dataKey="score" name="KPI Score" fill="var(--goi-deep)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="w-full h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={performanceMetrics.metrics} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#5f6b7a' }} axisLine={{ stroke: '#e2e8f0' }} tickLine={false} />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: '#5f6b7a' }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }} />
+                  <Legend wrapperStyle={{ fontSize: '12px', fontWeight: 600 }} />
+                  <Bar dataKey="score" name="KPI Score" fill="var(--goi-deep)" radius={[6, 6, 0, 0]} barSize={24} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
 
-            <div className="mt-6 space-y-3">
+            <div className="mt-6 space-y-2.5">
               {performanceMetrics.metrics.map((metric) => (
-                <div key={metric.name} className="flex flex-col gap-1 rounded-lg border border-[var(--goi-line)] p-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
+                <div key={metric.name} className="flex flex-col gap-1.5 rounded-lg border border-[var(--goi-line)] bg-white/60 p-4 sm:flex-row sm:items-center sm:justify-between hover:bg-white hover:border-[var(--goi-deep)]/20 transition-colors">
+                  <div className="flex-1 min-w-0">
                     <p className="font-semibold text-[var(--goi-ink)] text-sm">{metric.name}</p>
-                    <p className="text-xs text-[var(--goi-muted)]">{metric.detail}</p>
+                    <p className="text-xs text-[var(--goi-muted)] mt-0.5">{metric.detail}</p>
                   </div>
-                  <p className="text-sm font-bold text-[var(--goi-deep)] whitespace-nowrap">{metric.score}/100 &middot; w{metric.weight}%</p>
+                  <div className="flex items-center gap-3 shrink-0 mt-2 sm:mt-0">
+                    <div className="w-28 h-2 bg-slate-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-[var(--goi-deep)] rounded-full transition-all duration-500" style={{ width: `${metric.score}%` }}></div>
+                    </div>
+                    <p className="text-sm font-bold text-[var(--goi-deep)] whitespace-nowrap tabular-nums">{metric.score}/100 <span className="text-[0.65rem] font-semibold text-[var(--goi-muted)]">w{metric.weight}%</span></p>
+                  </div>
                 </div>
               ))}
-            </div>
-
-            <div className="flex justify-center mt-6">
-              <button className="btn-primary" onClick={() => setShowPerformance(false)}>Close</button>
             </div>
           </div>
         </div>

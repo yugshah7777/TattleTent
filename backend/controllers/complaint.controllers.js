@@ -65,19 +65,30 @@ const createComplaint = asynchandler(async (req, res) => {
 
   // Save complaint 
   const savedComplaint = await saveComplaintToDB(newComplaint);
-  queueAuditEvent({
-    complaintId: savedComplaint.complaint_id,
-    action: "COMPLAINT_CREATED",
-    actor: `USER_${user_id}`,
-    oldValue: null,
-    newValue: savedComplaint.status,
-    department: category,
-    metadataHash: `${savedComplaint.complaint_id}:CREATED`,
-    timestamp: new Date(),
-  });
-  queueComplaintVerificationSync(savedComplaint.complaint_id).catch((error) => {
-    console.error("ICP verification sync failed after create:", error.message);
-  });
+
+  // Fire-and-forget ICP audit — must NEVER block the response
+  try {
+    queueAuditEvent({
+      complaintId: savedComplaint.complaint_id,
+      action: "COMPLAINT_CREATED",
+      actor: `USER_${user_id}`,
+      oldValue: null,
+      newValue: savedComplaint.status,
+      department: category,
+      metadataHash: `${savedComplaint.complaint_id}:CREATED`,
+      timestamp: new Date(),
+    });
+  } catch (e) {
+    console.error("ICP queueAuditEvent failed (non-blocking):", e.message);
+  }
+
+  try {
+    queueComplaintVerificationSync(savedComplaint.complaint_id).catch((error) => {
+      console.error("ICP verification sync failed after create:", error.message);
+    });
+  } catch (e) {
+    console.error("ICP queueComplaintVerificationSync failed (non-blocking):", e.message);
+  }
 
   return res
     .status(201)

@@ -149,7 +149,7 @@ useEffect(() => {
         apiUrl("/api/complaints"),
         formData,
         {
-          headers: authHeaders({ "Content-Type": "multipart/form-data" }),
+          headers: authHeaders(), // DO NOT set Content-Type manually — axios needs to auto-set multipart boundary
         }
       );
 
@@ -319,11 +319,11 @@ useEffect(() => {
             <table className="w-full">
               <thead>
                 <tr>
-                  <th>Category</th>
-                  <th>Status</th>
+                  <th className="w-[15%]">Category</th>
+                  <th className="w-[12%]">Status</th>
                   <th>Title</th>
-                  <th>Submitted</th>
-                  <th className="text-right">Action</th>
+                  <th className="w-[15%]">Submitted</th>
+                  <th className="w-[15%] text-center">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -341,10 +341,10 @@ useEffect(() => {
                     <tr key={c.id}>
                       <td className="font-medium text-[var(--goi-ink)]">{c.category}</td>
                       <td><span className={statusClassName(c.status)}>{normalizeStatus(c.status)}</span></td>
-                      <td className="font-medium text-[var(--goi-ink)] truncate max-w-xs">{c.title}</td>
+                      <td className="font-medium text-[var(--goi-ink)] truncate max-w-[200px]">{c.title}</td>
                       <td className="text-sm text-[var(--goi-muted)]">{c.subdate}</td>
-                      <td className="text-right">
-                        <button className="btn-secondary btn-sm" onClick={() => handleDetails(c)}>Details</button>
+                      <td className="text-center">
+                        <button className="btn-secondary btn-sm whitespace-nowrap" onClick={() => handleDetails(c)}>Details</button>
                       </td>
                     </tr>
                   ))
@@ -366,24 +366,24 @@ useEffect(() => {
               <table className="w-full">
                 <thead>
                   <tr>
-                    <th>Category</th>
+                    <th className="w-[15%]">Category</th>
                     <th>Title</th>
-                    <th>Date</th>
-                    <th>Details</th>
-                    <th>Feedback</th>
+                    <th className="w-[15%]">Date</th>
+                    <th className="w-[15%] text-center">Details</th>
+                    <th className="w-[18%] text-center">Feedback</th>
                   </tr>
                 </thead>
                 <tbody>
                   {resolvedComplaints.map(c => (
                     <tr key={c.id}>
                       <td className="font-medium">{c.category}</td>
-                      <td className="font-medium">{c.title}</td>
-                      <td>{c.subdate}</td>
-                      <td>
-                        <button className="text-[var(--goi-deep)] hover:underline text-sm font-medium" onClick={() => handleDetails(c)}>View Details</button>
+                      <td className="font-medium truncate max-w-[200px]">{c.title}</td>
+                      <td className="text-sm text-[var(--goi-muted)]">{c.subdate}</td>
+                      <td className="text-center">
+                        <button className="text-[var(--goi-deep)] hover:underline text-sm font-medium whitespace-nowrap" onClick={() => handleDetails(c)}>View Details</button>
                       </td>
-                      <td>
-                        <button className="btn-secondary btn-sm" onClick={() => navigate("/feedback-page", { state: { complaint: c } })}>Give Feedback</button>
+                      <td className="text-center">
+                        <button className="btn-secondary btn-sm whitespace-nowrap" onClick={() => navigate("/feedback-page", { state: { complaint: c } })}>Give Feedback</button>
                       </td>
                     </tr>
                   ))}
