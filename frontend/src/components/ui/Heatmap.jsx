@@ -4,9 +4,10 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import "leaflet.heat";
 import { motion } from "framer-motion";
-import { FiRefreshCcw } from "react-icons/fi";
-import Logo from "./Logo"; // ✅ Uncomment if you have it
+import { FiImage, FiMap, FiRefreshCcw } from "react-icons/fi";
+import Logo from "./Logo";
 import { useNavigate } from "react-router-dom";
+import { apiUrl, clearSession } from "../../lib/api";
 
 // HeatmapLayer Component
 const HeatmapLayer = ({ points }) => {
@@ -52,18 +53,22 @@ const LeafletHeatmap = () => {
   const [loading, setLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [viewMode, setViewMode] = useState("satellite");
-  const [userLocation, setUserLocation] = useState(null);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [userLocation] = useState(null);
   const navigate = useNavigate();
 
   const fetchPoints = async () => {
     try {
       setLoading(true);
-      const res = await fetch("http://localhost:5000/api/complaints/heatmap");
+      setErrorMessage("");
+      const res = await fetch(apiUrl("/api/complaints/heatmap"));
       const data = await res.json();
-      setPoints(data);
+      if (!res.ok) throw new Error(data.message || "Unable to fetch heatmap data");
+      setPoints((Array.isArray(data) ? data : []).filter((point) => Number.isFinite(Number(point.latitude)) && Number.isFinite(Number(point.longitude))));
       setLastUpdated(new Date().toLocaleTimeString());
     } catch (err) {
       console.error("Error fetching heatmap data:", err);
+      setErrorMessage("Unable to update heatmap data. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -84,7 +89,7 @@ const LeafletHeatmap = () => {
   return (
     <>
       {/* Header */}
-      <div className="fixed top-0 left-0 w-full h-24 flex items-center justify-between px-8 bg-white shadow-md z-[1000]">
+      <div className="premium-nav fixed top-0 left-0 w-full h-24 flex items-center justify-between px-8 z-[1000]">
         <Logo />
         <div className="flex items-center gap-4">
           <div className="text-right">
@@ -93,13 +98,16 @@ const LeafletHeatmap = () => {
           </div>
           <button
             onClick={() => navigate("/admin-dashboard")}
-            className="rounded-full bg-[#d55d1f] hover:bg-[#b54a16] text-white px-3 py-2 transition duration-200"
+            className="btn-secondary"
           >
             My Dashboard
           </button>
           <button
-            onClick={() => navigate("/")}
-            className="rounded-full bg-[#d55d1f] hover:bg-[#b54a16] text-white px-5 py-2 transition duration-200"
+            onClick={() => {
+              clearSession();
+              navigate("/");
+            }}
+            className="btn-primary"
           >
             Logout
           </button>
@@ -110,26 +118,32 @@ const LeafletHeatmap = () => {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="min-h-screen bg-[#FCF5EE] flex flex-col items-center pt-32 px-6 relative"
+        className="app-shell min-h-screen flex flex-col items-center pt-32 px-6 relative"
       >
         {/* Page Header */}
         <div className="max-w-5xl w-full text-center mb-10">
-          <h1 className="text-4xl font-bold text-[#d55d1f] mb-3">Community Heatmap</h1>
+          <h1 className="text-4xl font-bold text-teal-900 mb-3">Grievance Density Map</h1>
           <p className="text-gray-700 text-sm sm:text-base leading-relaxed">
-            Explore complaint density and hotspots across the city. Each glowing area represents
-            regions where citizens have actively reported issues through TattleTent.
+            Review geographic concentration of public grievances to support department planning,
+            prioritisation, and field response.
           </p>
         </div>
 
+        {errorMessage && (
+          <div className="mb-6 w-full max-w-5xl rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-medium text-red-800 shadow-sm">
+            {errorMessage}
+          </div>
+        )}
+
         {/* Map Container */}
-        <div className="w-full max-w-6xl shadow-xl border border-[#e6d9cc] rounded-3xl overflow-hidden relative">
+        <div className="w-full max-w-6xl shadow-xl border border-slate-200 rounded-lg overflow-hidden relative">
           <MapContainer
             center={userLocation || [22.9734, 78.6569]} // Center of India
             zoom={5}
             minZoom={4}
             maxZoom={18}
-            style={{ height: "calc(100vh - 8rem)", width: "100%" }}
-            className="rounded-3xl"
+            style={{ height: "min(68vh, 680px)", minHeight: "420px", width: "100%" }}
+            className="rounded-lg"
             zoomControl={false}
           >
             <TileLayer url={tileLayerUrl} />
@@ -141,8 +155,9 @@ const LeafletHeatmap = () => {
             <button
               onClick={fetchPoints}
               disabled={loading}
-              className="bg-white/90 hover:bg-white text-[#d55d1f] border border-[#d55d1f] rounded-full p-3 shadow-md hover:shadow-lg transition"
+              className="btn-secondary bg-white/90 p-3"
               title="Refresh Data"
+              aria-label="Refresh heatmap data"
             >
               <FiRefreshCcw className={`text-lg ${loading ? "animate-spin" : ""}`} />
             </button>
@@ -151,10 +166,11 @@ const LeafletHeatmap = () => {
               onClick={() =>
                 setViewMode(viewMode === "satellite" ? "street" : "satellite")
               }
-              className="bg-white/90 hover:bg-white text-[#d55d1f] border border-[#d55d1f] rounded-full p-3 shadow-md hover:shadow-lg transition"
+              className="btn-secondary bg-white/90 p-3"
               title="Toggle View"
+              aria-label="Toggle map view"
             >
-              {viewMode === "satellite" ? "🗺️" : "🛰️"}
+              {viewMode === "satellite" ? <FiMap className="text-lg" /> : <FiImage className="text-lg" />}
             </button>
           </div>
         </div>
@@ -169,7 +185,7 @@ const LeafletHeatmap = () => {
             <p className="text-xs text-gray-500 italic">
               Last updated: {lastUpdated || "just now"}
               <br />
-              © {new Date().getFullYear()} TattleTent. All rights reserved.
+              © {new Date().getFullYear()} Government of India Public Grievance Resolution Portal.
             </p>
           )}
         </div>

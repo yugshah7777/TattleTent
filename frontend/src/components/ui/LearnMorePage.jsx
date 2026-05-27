@@ -1,84 +1,74 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
 
 const LearnMorePage = () => {
-  const navigate=useNavigate();
-
   return (
-    <div className="min-h-screen bg-[#FCF5EE] font-sans">
-      {/* Header / Hero Section */}
-      <header className="bg-orange-50 py-20 px-6 text-center">
-        <h1 className="text-5xl sm:text-6xl font-bold text-orange-700 mb-4">Welcome to TattleTent</h1>
-        <p className="text-xl sm:text-2xl text-gray-700 max-w-3xl mx-auto">
-          We are committed to building safer, cleaner, and better communities. Explore how we work and how you can be a part of it.
+    <div className="app-shell min-h-screen font-sans">
+      <header className="px-6 py-20 text-center">
+        <p className="mb-3 text-sm font-bold uppercase tracking-[0.22em] text-teal-800">
+          Government of India
+        </p>
+        <h1 className="mb-4 text-5xl font-extrabold text-slate-950 sm:text-6xl">
+          Public Grievance Resolution Portal
+        </h1>
+        <p className="mx-auto max-w-3xl text-xl text-slate-600 sm:text-2xl">
+          A formal citizen service platform for registering civic grievances,
+          monitoring departmental action, and improving public accountability.
         </p>
         <div className="mt-8">
-          <a href="#how-we-work" className="px-6 py-3 bg-orange-600 text-white rounded-xl hover:bg-orange-700 transition font-semibold">
-            Learn How We Work
+          <a href="#how-we-work" className="btn-primary px-6 py-3">
+            Learn How It Works
           </a>
         </div>
       </header>
 
-      {/* About Us Section */}
-      <section className="py-20 px-6 bg-white text-center">
-        <h2 className="text-4xl font-bold text-orange-700 mb-6">Who We Are</h2>
-        <p className="text-gray-700 max-w-4xl mx-auto text-lg leading-relaxed">
-          YUS is a citizen-first platform that connects community needs with proactive staff members. We help identify issues, resolve complaints, and ensure that every community member’s voice is heard. Our team is dedicated, trained, and ready to make a difference in your neighborhood.
+      <section className="bg-white px-6 py-20 text-center">
+        <h2 className="mb-6 text-4xl font-bold text-teal-900">Purpose</h2>
+        <p className="mx-auto max-w-4xl text-lg leading-relaxed text-slate-700">
+          The portal connects citizens with responsible public service teams.
+          It helps capture structured grievances, assign them to officers,
+          track action status, and record citizen feedback after resolution.
         </p>
       </section>
 
-      {/* How We Work Section */}
-      <section id="how-we-work" className="py-20 px-6 bg-[#FFF5E5]">
-        <h2 className="text-4xl font-bold text-orange-700 text-center mb-12">How We Work</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-6xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-lg p-8 text-center hover:scale-105 transform transition">
-            <div className="text-6xl mb-4">📋</div>
-            <h3 className="text-2xl font-bold text-orange-600 mb-2">Report Complaints</h3>
-            <p className="text-gray-700">
-              Citizens can easily report issues in their area, ranging from water leaks to garbage management and electrical problems.
-            </p>
-          </div>
-          <div className="bg-white rounded-2xl shadow-lg p-8 text-center hover:scale-105 transform transition">
-            <div className="text-6xl mb-4">🛠️</div>
-            <h3 className="text-2xl font-bold text-orange-600 mb-2">Assign & Resolve</h3>
-            <p className="text-gray-700">
-              Admins assign complaints to staff who take immediate action. Status updates and solutions are tracked for transparency.
-            </p>
-          </div>
-          <div className="bg-white rounded-2xl shadow-lg p-8 text-center hover:scale-105 transform transition">
-            <div className="text-6xl mb-4">✅</div>
-            <h3 className="text-2xl font-bold text-orange-600 mb-2">Verified Completion</h3>
-            <p className="text-gray-700">
-              Once resolved, complaints are verified and citizens are notified. Performance and feedback are recorded to improve services.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Our Services / Features */}
-      <section className="py-20 px-6 bg-white text-center">
-        <h2 className="text-4xl font-bold text-orange-700 mb-12">Our Services</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
+      <section id="how-we-work" className="px-6 py-20">
+        <h2 className="mb-12 text-center text-4xl font-bold text-teal-900">Service Workflow</h2>
+        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 md:grid-cols-3">
           {[
-            { icon: "🧹", title: "Garbage Management", description: "Timely collection and disposal of community waste." },
-            { icon: "💡", title: "Electrical Maintenance", description: "Fixing streetlights, electrical hazards, and outages." },
-            { icon: "🚰", title: "Water & Plumbing", description: "Immediate response to leaks, bursts, and water supply issues." },
-            { icon: "🚧", title: "Roads & Pathways", description: "Repairing roads, tiles, and public infrastructure." },
-          ].map((service, idx) => (
-            <div key={idx} className="bg-[#FFF5E5] rounded-2xl shadow-lg p-6 hover:scale-105 transform transition">
-              <div className="text-5xl mb-4">{service.icon}</div>
-              <h3 className="text-xl font-bold text-orange-600 mb-2">{service.title}</h3>
-              <p className="text-gray-700 text-sm">{service.description}</p>
+            ["Register Grievance", "Citizens submit category, location, description, and supporting image where available."],
+            ["Department Assignment", "Administrators assign cases to departmental officers with priority and audit visibility."],
+            ["Resolution & Feedback", "Officers update resolution status and citizens submit feedback for service quality review."],
+          ].map(([title, description]) => (
+            <div key={title} className="premium-card p-8 text-center">
+              <h3 className="mb-3 text-2xl font-bold text-teal-900">{title}</h3>
+              <p className="text-slate-700">{description}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Call to Action */}
-      <section className="py-20 px-6 bg-orange-50 text-center">
-        <h2 className="text-3xl font-bold text-orange-700 mb-4">Join Us in Building Better Communities</h2>
-        <p className="text-gray-700 mb-6 max-w-2xl mx-auto">Become a citizen reporter or staff member and help improve your neighborhood.</p>
-        <a href="/" className="px-6 py-3 bg-orange-600 text-white rounded-xl hover:bg-orange-700 transition font-semibold">Back To Home</a>
+      <section className="bg-white px-6 py-20 text-center">
+        <h2 className="mb-12 text-4xl font-bold text-teal-900">Service Categories</h2>
+        <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {[
+            ["Sanitation Services", "Solid waste collection and civic cleanliness issues."],
+            ["Electrical Maintenance", "Street lighting, public wiring, and outage concerns."],
+            ["Water Supply", "Leaks, disruptions, contamination, and public supply issues."],
+            ["Road Infrastructure", "Road, pathway, and public access infrastructure repairs."],
+          ].map(([title, description]) => (
+            <div key={title} className="premium-card p-6">
+              <h3 className="mb-2 text-xl font-bold text-teal-900">{title}</h3>
+              <p className="text-sm text-slate-700">{description}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="px-6 py-20 text-center">
+        <h2 className="mb-4 text-3xl font-bold text-slate-950">Citizen-Centric Administration</h2>
+        <p className="mx-auto mb-6 max-w-2xl text-slate-700">
+          Use the portal to submit public service issues and monitor official resolution progress.
+        </p>
+        <a href="/" className="btn-primary px-6 py-3">Back To Home</a>
       </section>
     </div>
   );

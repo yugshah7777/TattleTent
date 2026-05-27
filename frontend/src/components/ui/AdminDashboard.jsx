@@ -1,14 +1,22 @@
 import React, { useState, useEffect } from "react";
 import Logo from "./Logo";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { FaBars } from "react-icons/fa";
+import {
+  apiUrl,
+  clearSession,
+  getStoredUser,
+  normalizeStatus,
+  statusClassName,
+} from "../../lib/api";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const user = JSON.parse(sessionStorage.getItem("user"));
+  const [user] = useState(() => getStoredUser() || { name: "Admin" });
   const [counts, setCounts] = useState({ resolved: 0, pending: 0, in_progress: 0 });
+  const [isLoadingNew, setIsLoadingNew] = useState(true);
+  const [isLoadingAssigned, setIsLoadingAssigned] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -43,8 +51,7 @@ const AdminDashboard = () => {
 
   const handleLogout = () => {
         // 1. Clear session data (must match what you used in LandingPage!)
-        sessionStorage.removeItem("token");
-        sessionStorage.removeItem("user");
+        clearSession();
         
         // 2. Redirect to the home page, which will now show Login/Sign Up buttons
         navigate("/"); 
@@ -69,7 +76,7 @@ const AdminDashboard = () => {
 
   const fetchCounts = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/complaints/counts');
+      const res = await axios.get(apiUrl("/api/complaints/counts"));
       setCounts(res.data);
     } catch (err) {
       console.error(err);
@@ -86,7 +93,9 @@ const AdminDashboard = () => {
       if (!user?.user_id) return;
 
       const queryParams = new URLSearchParams({ status: "New" }).toString();
-      const response = await fetch(`http://localhost:5000/api/complaints/search?${queryParams}`);
+      setIsLoadingNew(true);
+      setErrorMessage("");
+      const response = await fetch(apiUrl(`/api/complaints/search?${queryParams}`));
 
       if (!response.ok) throw new Error("Failed to fetch complaints");
 
@@ -102,12 +111,16 @@ const AdminDashboard = () => {
 
     } catch (err) {
       console.error("Error fetching complaints:", err);
-      setComplaints(demoNewComplaints); // fallback to demo
+      setComplaints([]);
+      setErrorMessage("Unable to load new complaints. Please try again.");
+    } finally {
+      setIsLoadingNew(false);
     }
   };
 
   useEffect(() => {
     if (user?.user_id) fetchComplaintsByUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   // Fetch assigned complaints (with demo fallback)
@@ -116,7 +129,9 @@ const AdminDashboard = () => {
       if (!user?.user_id) return;
 
       const queryParams = new URLSearchParams({ status: "IN_PROGRESS" }).toString();
-      const response = await fetch(`http://localhost:5000/api/complaints/search?${queryParams}`);
+      setIsLoadingAssigned(true);
+      setErrorMessage("");
+      const response = await fetch(apiUrl(`/api/complaints/search?${queryParams}`));
 
       if (!response.ok) throw new Error("Failed to fetch complaints");
 
@@ -132,22 +147,26 @@ const AdminDashboard = () => {
 
     } catch (err) {
       console.error("Error fetching assigned complaints:", err);
-      setAssignedComplaints(demoAssignedComplaints); // fallback to demo
+      setAssignedComplaints([]);
+      setErrorMessage("Unable to load assigned complaints. Please try again.");
+    } finally {
+      setIsLoadingAssigned(false);
     }
   };
 
   useEffect(() => {
     if (user?.user_id) fetchAssignedComplaints();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   // Pagination slices
-  const totalNewPages = Math.ceil(complaints.length / complaintsPerPage);
+  const totalNewPages = Math.max(1, Math.ceil(complaints.length / complaintsPerPage));
   const paginatedNewComplaints = complaints.slice(
     (currentNewPage - 1) * complaintsPerPage,
     currentNewPage * complaintsPerPage
   );
 
-  const totalAssignedPages = Math.ceil(assignedComplaints.length / complaintsPerPage);
+  const totalAssignedPages = Math.max(1, Math.ceil(assignedComplaints.length / complaintsPerPage));
   const paginatedAssignedComplaints = assignedComplaints.slice(
     (currentAssignedPage - 1) * complaintsPerPage,
     currentAssignedPage * complaintsPerPage
@@ -177,7 +196,7 @@ const AdminDashboard = () => {
   ); */
 
   return (
-    <div className="min-h-screen bg-[#FCF5EE] font-sans flex flex-col justify-between">
+    <div className="app-shell min-h-screen font-sans flex flex-col justify-between">
       {/* Navbar */}
       {/* <div className="fixed top-0 left-0 w-full h-24 flex items-center justify-between px-8 bg-white shadow-md z-50">
         <Logo />
@@ -197,7 +216,7 @@ const AdminDashboard = () => {
             className="rounded-full bg-[#d55d1f] hover:bg-[#b54a16] text-white px-5 py-2"
             onClick={() => navigate("/all-complaints")}
           >
-            All Complaints
+            All Grievances
           </button>
           <button
             className="rounded-full bg-[#d55d1f] hover:bg-[#b54a16] text-white px-5 py-2"
@@ -214,7 +233,7 @@ const AdminDashboard = () => {
         </div>
       </div> */}
 
-      <div className="fixed top-0 left-0 w-full h-24 flex flex-col sm:flex-row items-center justify-between px-4 sm:px-8 bg-white shadow-md z-50">
+      <div className="premium-nav fixed top-0 left-0 w-full min-h-24 flex flex-col sm:flex-row items-center justify-between px-4 sm:px-8 z-50">
   <div className="w-full sm:w-auto flex items-center justify-between">
     <Logo />
 
@@ -222,7 +241,9 @@ const AdminDashboard = () => {
     <div className="sm:hidden">
       <button
         onClick={() => setMenuOpen(!menuOpen)}
-        className="p-2 rounded-md focus:outline-none bg-gray-100 hover:bg-gray-200"
+        className="p-2 rounded-md bg-slate-100 text-slate-800 hover:bg-slate-200"
+        aria-label="Toggle navigation menu"
+        aria-expanded={menuOpen}
       >
         <svg
           className="w-6 h-6"
@@ -254,25 +275,25 @@ const AdminDashboard = () => {
     </div>
 
     <button
-      className="rounded-full bg-[#d55d1f] hover:bg-[#b54a16] text-white px-5 py-2"
+      className="btn-secondary"
       onClick={() => navigate("/heatmap")}
     >
       Heatmap
     </button>
     <button
-      className="rounded-full bg-[#d55d1f] hover:bg-[#b54a16] text-white px-5 py-2"
+      className="btn-secondary"
       onClick={() => navigate("/all-complaints")}
     >
-      All Complaints
+      All Grievances
     </button>
     <button
-      className="rounded-full bg-[#d55d1f] hover:bg-[#b54a16] text-white px-5 py-2"
+      className="btn-secondary"
       onClick={() => navigate("/invite-staff")}
     >
       Invite Staff
     </button>
     <button
-      className="rounded-full bg-[#d55d1f] hover:bg-[#b54a16] text-white px-5 py-2"
+      className="btn-primary"
       onClick={handleLogout}
     >
       Logout
@@ -284,27 +305,26 @@ const AdminDashboard = () => {
       <main className="container mx-auto px-6 py-12 max-w-7xl pt-32 space-y-12 flex-grow">
         {/* Welcome Section */}
         <div className="text-center">
-          <h2 className="text-5xl sm:text-6xl md:text-7xl font-extrabold bg-gradient-to-r from-orange-700 via-amber-600 to-yellow-500 bg-clip-text text-transparent leading-tight tracking-tight">
-            Welcome, {user.name} 🛡️
+          <h2 className="text-5xl sm:text-6xl md:text-7xl font-extrabold text-slate-950 leading-tight tracking-tight">
+            Welcome, {user.name}
           </h2>
           <p className="text-gray-700 text-lg italic">
-            Manage staff, assign complaints, and review citizen feedback.
+            Manage departmental officers, assign grievances, and review citizen feedback.
           </p>
         </div>
 
         <hr className="border-gray-200" /> 
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8"> {/* Increased gap for better spacing */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
           {[
-            { title: "Total Complaints", count: (parseInt(counts.resolved, 10) || 0) + (parseInt(counts.in_progress, 10) || 0) + (parseInt(counts.pending, 10) || 0) },
+            { title: "Total Grievances", count: (parseInt(counts.resolved, 10) || 0) + (parseInt(counts.in_progress, 10) || 0) + (parseInt(counts.pending, 10) || 0) },
             { title: "In Progress", count: counts.in_progress },
             { title: "Pending", count: counts.pending },
           ].map((s) => (
             <div
               key={s.title}
-              className="rounded-2xl px-3 py-8 shadow-xl flex flex-col items-center 
-                bg-gradient-to-r from-orange-100 via-amber-50 to-orange-100
-                transform transition duration-500 hover:scale-[1.02] text-orange-700"
+                className="premium-card metric-card px-3 py-8 flex flex-col items-center 
+                text-slate-900"
             >
               <div className="text-4xl font-extrabold">{s.count}</div>
               <div className="mt-2 font-semibold text-lg text-center">{s.title}</div>
@@ -312,12 +332,18 @@ const AdminDashboard = () => {
           ))}
         </div>
 
-        {/* New Complaints Table */}
-        <div>
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-3xl font-bold text-gray-900">New Complaints</h3>
+        {errorMessage && (
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-medium text-red-800 shadow-sm">
+            {errorMessage}
           </div>
-          <div className="overflow-x-auto rounded-lg border border-gray-300">
+        )}
+
+        {/* New Grievances Table */}
+        <div className="surface-panel p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-3xl font-bold text-gray-900">New Grievances</h3>
+          </div>
+          <div className="table-shell overflow-x-auto">
             <table className="min-w-full divide-y divide-blue-200">
               <thead className="bg-white">
                 <tr>
@@ -334,15 +360,15 @@ const AdminDashboard = () => {
               <tbody className="divide-y divide-blue-200 bg-white">
                 {paginatedNewComplaints.length > 0 ? (
                   paginatedNewComplaints.map((c) => (
-                    <tr key={c.id} className="hover:bg-blue-50 transition">
+                    <tr key={c.id} className="transition">
                       <td className="p-4 font-bold">{c.id}</td>
                       <td className="p-4">{c.category}</td>
                       <td className="p-4">{c.location}</td>
-                      <td className="p-4">{c.status}</td>
+                      <td className="p-4"><span className={statusClassName(c.status)}>{normalizeStatus(c.status)}</span></td>
                       <td className="p-4">{c.assignedTo || "Unassigned"}</td>
                       <td className="p-4">
                         <button
-                          className="px-3 py-1.5 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700 transition"
+                          className="btn-primary px-3 py-1.5 text-sm"
                           onClick={() => handleAssignClick(c)}
                         >
                           Assign
@@ -350,10 +376,16 @@ const AdminDashboard = () => {
                       </td>
                     </tr>
                   ))
+                ) : isLoadingNew ? (
+                  <tr>
+                    <td colSpan="6" className="text-center p-6 text-gray-500">
+                      Loading new grievances...
+                    </td>
+                  </tr>
                 ) : (
                   <tr>
                     <td colSpan="6" className="text-center p-4 text-gray-500">
-                      No complaints found.
+                      No grievances found.
                     </td>
                   </tr>
                 )}
@@ -366,7 +398,7 @@ const AdminDashboard = () => {
             <button
               onClick={() => setCurrentNewPage((p) => Math.max(p - 1, 1))}
               disabled={currentNewPage === 1}
-              className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-400 transition"
+              className="btn-muted px-4 py-2 disabled:opacity-50"
             >
               Prev
             </button>
@@ -376,19 +408,19 @@ const AdminDashboard = () => {
             <button
               onClick={() => setCurrentNewPage((p) => Math.min(p + 1, totalNewPages))}
               disabled={currentNewPage === totalNewPages}
-              className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-400 transition"
+              className="btn-muted px-4 py-2 disabled:opacity-50"
             >
               Next
             </button>
           </div>
         </div>
 
-        {/* Assigned Complaints Table */}
-        <div>
+        {/* Assigned Grievances Table */}
+        <div className="surface-panel p-6">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-3xl font-bold text-gray-900">Assigned Complaints</h3>
+            <h3 className="text-3xl font-bold text-gray-900">Assigned Grievances</h3>
           </div>
-          <div className="overflow-x-auto rounded-lg border border-gray-300">
+          <div className="table-shell overflow-x-auto">
             <table className="min-w-full divide-y divide-blue-200">
               <thead className="bg-white">
                 <tr>
@@ -405,18 +437,24 @@ const AdminDashboard = () => {
               <tbody className="divide-y divide-blue-200 bg-white">
                 {paginatedAssignedComplaints.length > 0 ? (
                   paginatedAssignedComplaints.map((c) => (
-                    <tr key={c.id} className="hover:bg-blue-50 transition">
+                    <tr key={c.id} className="transition">
                       <td className="p-4 font-bold">{c.id}</td>
                       <td className="p-4">{c.category}</td>
                       <td className="p-4">{c.location}</td>
-                      <td className="p-4">{c.status}</td>
+                      <td className="p-4"><span className={statusClassName(c.status)}>{normalizeStatus(c.status)}</span></td>
                       <td className="p-4">{c.assignedTo }</td>
                     </tr>
                   ))
+                ) : isLoadingAssigned ? (
+                  <tr>
+                    <td colSpan="5" className="text-center p-6 text-gray-500">
+                      Loading assigned grievances...
+                    </td>
+                  </tr>
                 ) : (
                   <tr>
                     <td colSpan="6" className="text-center p-4 text-gray-500">
-                      No complaints found.
+                      No grievances found.
                     </td>
                   </tr>
                 )}
@@ -429,7 +467,7 @@ const AdminDashboard = () => {
             <button
               onClick={() => setCurrentAssignedPage((p) => Math.max(p - 1, 1))}
               disabled={currentAssignedPage === 1}
-              className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-400 transition"
+              className="btn-muted px-4 py-2 disabled:opacity-50"
             >
               Prev
             </button>
@@ -439,7 +477,7 @@ const AdminDashboard = () => {
             <button
               onClick={() => setCurrentAssignedPage((p) => Math.min(p + 1, totalAssignedPages))}
               disabled={currentAssignedPage === totalAssignedPages}
-              className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-400 transition"
+              className="btn-muted px-4 py-2 disabled:opacity-50"
             >
               Next
             </button>
@@ -478,7 +516,7 @@ const AdminDashboard = () => {
                 key={index}
                 onClick={() => setCurrentReviewPage(index)}
                 className={`w-3 h-3 rounded-full ${
-                  currentReviewPage === index ? "bg-orange-600" : "bg-gray-400"
+                  currentReviewPage === index ? "bg-teal-900" : "bg-gray-400"
                 }`}
               ></button>
             ))}
@@ -488,7 +526,7 @@ const AdminDashboard = () => {
 
       {/* Footer */}
       <footer className="text-center py-4 bg-white shadow-inner text-gray-600 text-sm">
-        © {new Date().getFullYear()} TattleTent. All rights reserved.
+        © {new Date().getFullYear()} Government of India Public Grievance Resolution Portal.
       </footer>
     </div>
   );

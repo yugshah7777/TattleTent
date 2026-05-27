@@ -4,11 +4,12 @@ import {
   getAllFeedbacks,
   getFeedbackForComplaint,
 } from "../controllers/feedback.controllers.js";
+import { protect } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
 // ✅ Routes
-router.post("/", createFeedback); // POST /api/feedback
+router.post("/", protect, createFeedback); // POST /api/feedback
 router.get("/", getAllFeedbacks); // GET /api/feedback
 router.get("/:id", getFeedbackForComplaint); // GET /api/feedback/:id (complaint ID)
 

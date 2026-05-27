@@ -1,31 +1,28 @@
-import { StrictMode } from "react";
+import { StrictMode, lazy, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { GoogleOAuthProvider } from "@react-oauth/google";
 import "./index.css";
 
-import Home from "./Home";
-import AuthSuccess from "./components/ui/AuthSuccess"; // ✅ New
-import CitizenDashboard from "./components/ui/CitizenDashboard";
-import StaffDashboard from "./components/ui/StaffDashboard";
-import AdminDashboard from "./components/ui/AdminDashboard";
-import LearnMorePage from "./components/ui/LearnMorePage";
-import AllComplaintsPage from "./components/ui/AllComplaintsPage";
-import AssignStaffPage from "./components/ui/AssignStaffPage";
-import Heatmap from "./components/ui/Heatmap";
-import FeedbackPage from "./components/ui/FeedbackPage";
-import AdminInviteStaff from "./components/ui/AdminInviteStaff";
-
-// Replace with your actual Google client ID
-const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com";
+const Home = lazy(() => import("./Home"));
+const AuthSuccess = lazy(() => import("./components/ui/AuthSuccess"));
+const CitizenDashboard = lazy(() => import("./components/ui/CitizenDashboard"));
+const StaffDashboard = lazy(() => import("./components/ui/StaffDashboard"));
+const AdminDashboard = lazy(() => import("./components/ui/AdminDashboard"));
+const LearnMorePage = lazy(() => import("./components/ui/LearnMorePage"));
+const AllComplaintsPage = lazy(() => import("./components/ui/AllComplaintsPage"));
+const AssignStaffPage = lazy(() => import("./components/ui/AssignStaffPage"));
+const Heatmap = lazy(() => import("./components/ui/Heatmap"));
+const FeedbackPage = lazy(() => import("./components/ui/FeedbackPage"));
+const AdminInviteStaff = lazy(() => import("./components/ui/AdminInviteStaff"));
+const StaffPasswordChange = lazy(() => import("./components/ui/StaffPasswordChange"));
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <BrowserRouter>
+    <BrowserRouter>
+      <Suspense fallback={<div className="app-loader" aria-label="Loading page" />}>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/auth-success" element={<AuthSuccess />} /> {/* ✅ New */}
+          <Route path="/auth-success" element={<AuthSuccess />} />
           <Route path="/citizen-dashboard" element={<CitizenDashboard />} />
           <Route path="/staff-dashboard" element={<StaffDashboard />} />
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
@@ -35,8 +32,9 @@ createRoot(document.getElementById("root")).render(
           <Route path="/heatmap" element={<Heatmap />} />
           <Route path="/feedback-page" element={<FeedbackPage />} />
           <Route path="/invite-staff" element={<AdminInviteStaff />} />
+          <Route path="/staff-password-change" element={<StaffPasswordChange />} />
         </Routes>
-      </BrowserRouter>
-    </GoogleOAuthProvider>
+      </Suspense>
+    </BrowserRouter>
   </StrictMode>
 );

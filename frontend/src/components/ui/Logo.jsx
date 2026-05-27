@@ -1,35 +1,27 @@
-// src/components/Logo.jsx
-
+// src/components/ui/Logo.jsx
 import React from 'react';
-
-// Custom colors
-const brownCircleColor = '#A0522D';
-const grayTextColor = 'text-orange-700'; 
-const scriptStyle = { fontFamily: 'Great Vibes, cursive' };
 
 const Logo = () => {
     return (
-        <a href="/" className="flex items-center space-x-2 max-w-full">
-            
-            {/* T Logo (Circle) */}
+        <a href="/" aria-label="Government of India - Public Grievance Resolution Portal" className="flex items-center gap-3 max-w-full hover:opacity-90 transition-opacity duration-200">
+            {/* Government of India Emblem */}
             <div 
-                className="flex items-center justify-center rounded-full border-4 text-black
-                           w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14"
-                style={{ borderColor: brownCircleColor }}
+                className="flex items-center justify-center rounded-md border border-goi-navy/30 bg-white shadow-elevation-1
+                           w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 flex-shrink-0"
             >
-                <span className="font-bold leading-none
-                                 text-sm sm:text-lg md:text-xl lg:text-2xl">
-                    T
+                <span className="font-extrabold leading-none text-goi-navy text-sm sm:text-base md:text-lg">
+                    IND
                 </span>
             </div>
 
-            {/* TattleTent Text */}
-            <span
-                className={`font-script font-extrabold ${grayTextColor} 
-                            text-xl sm:text-2xl md:text-4xl lg:text-5xl xl:text-6xl truncate`}
-                style={scriptStyle}
-            >
-                TattleTent
+            {/* Text Content */}
+            <span className="flex min-w-0 flex-col leading-tight">
+                <span className="truncate text-sm font-extrabold uppercase tracking-widest text-goi-navy-900 sm:text-base md:text-lg">
+                    Government of India
+                </span>
+                <span className="truncate text-xs font-semibold text-goi-navy-600 sm:text-sm">
+                    Public Grievance Resolution Portal
+                </span>
             </span>
         </a>
     );

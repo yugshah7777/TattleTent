@@ -15,13 +15,13 @@ import path from "path";
 dotenv.config();
 
 const app = express();
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 // Middleware to parse JSON bodies
 app.use(express.json());
 app.use(passport.initialize());
 app.use("/public", express.static("public"));
-app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
-app.use(express.json());
+app.use(cors({ origin: FRONTEND_URL, credentials: true }));
 
 
 //Routes

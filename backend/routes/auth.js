@@ -1,12 +1,43 @@
 import { Router } from 'express';
 import pool from '../db/db.js';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import passport from 'passport';
 import generateToken from '../utils/generateToken.js';
 import sendEmail from '../utils/sendEmail.js';
 import { protect, adminOnly } from '../middlewares/authMiddleware.js';
 
 const router = Router();
+
+const generateNumericOtp = () => crypto.randomInt(100000, 1000000).toString();
+
+const randomChar = (charset) => charset[crypto.randomInt(0, charset.length)];
+
+const generateTemporaryPassword = (length = 14) => {
+  const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const lower = 'abcdefghijkmnopqrstuvwxyz';
+  const digits = '23456789';
+  const symbols = '!@#$%^&*_-+=';
+  const all = upper + lower + digits + symbols;
+
+  const chars = [
+    randomChar(upper),
+    randomChar(lower),
+    randomChar(digits),
+    randomChar(symbols),
+  ];
+
+  for (let i = chars.length; i < length; i += 1) {
+    chars.push(randomChar(all));
+  }
+
+  for (let i = chars.length - 1; i > 0; i -= 1) {
+    const j = crypto.randomInt(0, i + 1);
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+
+  return chars.join('');
+};
 
 // otp
 const otpStore = new Map();
@@ -19,7 +50,7 @@ router.post('/send-otp', async (req, res) => {
       return res.status(409).json({ message: 'An account with this email already exists.' });
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = generateNumericOtp();
     const otpHash = await bcrypt.hash(otp, 10);
     
     // 5 mins
@@ -30,7 +61,7 @@ router.post('/send-otp', async (req, res) => {
     await sendEmail({
       email: email,
       subject: 'Your Verification Code',
-      html: `<h1>Your TattleTent Verification Code is: ${otp}</h1><p>This code will expire in 5 minutes.</p>`,
+      html: `<h1>Your Government of India Public Grievance Portal verification code is: ${otp}</h1><p>This code will expire in 5 minutes.</p>`,
     });
 
     res.status(200).json({ message: 'OTP has been sent to your email.' });
@@ -40,7 +71,6 @@ router.post('/send-otp', async (req, res) => {
     res.status(500).send('Server Error');
   }
 });
-
 
 // Register
 router.post('/register', async (req, res) => {
@@ -82,8 +112,9 @@ router.post('/register', async (req, res) => {
     otpStore.delete(email);
     
     // JWT
-    const token = generateToken(newUser.rows[0].user_id);
-    res.status(201).json({ token });
+    const user = newUser.rows[0];
+    const token = generateToken(user.user_id);
+    res.status(201).json({ token, user });
 
   } catch (err) {
     if (err.code === '23505') { 
@@ -126,9 +157,9 @@ router.post('/admin/create-staff', protect, adminOnly, async (req, res) => {
 
         await sendEmail({
           email: staff.email,
-          subject: 'Your Staff Account for TattleTent',
+          subject: 'Your Department Officer Account',
           html: `
-            <h2>Welcome to TattleTent</h2>
+            <h2>Welcome to the Government of India Public Grievance Portal</h2>
             <p>Dear ${staff.name},</p>
             <p>Your role has been upgraded to Staff. Please log in using your existing account credentials.</p>
             <p><b>Login here:</b> https://your-frontend-url.com/login</p>
@@ -148,7 +179,7 @@ router.post('/admin/create-staff', protect, adminOnly, async (req, res) => {
     }
     
     // 2️⃣  Create temporary password
-    const tempPassword = 'Temp@1234';
+    const tempPassword = generateTemporaryPassword();
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
     // 3️⃣  Insert staff into database
@@ -164,11 +195,11 @@ router.post('/admin/create-staff', protect, adminOnly, async (req, res) => {
     // 4️⃣  Send email to staff with login credentials
     await sendEmail({
       email,
-      subject: 'Your Staff Account for TattleTent',
+      subject: 'Your Department Officer Account',
       html: `
-        <h2>Welcome to TattleTent</h2>
+        <h2>Welcome to the Government of India Public Grievance Portal</h2>
         <p>Dear ${name},</p>
-        <p>An account has been created for you by the TattleTent admin. Use the credentials below to log in:</p>
+        <p>An account has been created for you by the portal administrator. Use the credentials below to log in:</p>
         <ul>
           <li><b>Email:</b> ${email}</li>
           <li><b>Temporary Password:</b> ${tempPassword}</li>
@@ -228,6 +259,8 @@ router.post('/login', async (req, res) => {
           return res.status(403).json({
             message: 'Password change required before login.',
             must_change_password: true,
+            email: user.email,
+            role: user.role,
           });
         }
 
@@ -298,9 +331,175 @@ router.put('/change-password', protect, async (req, res) => {
   }
 });
 
+router.post('/complete-required-password-change', async (req, res) => {
+  try {
+    const { email, currentPassword, newPassword } = req.body;
+
+    if (!email || !currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Please provide email, current password, and new password.' });
+    }
+
+    const userResult = await pool.query(
+      'SELECT user_id, name, email, role, password_hash, must_change_password FROM users WHERE email = $1',
+      [email]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    const user = userResult.rows[0];
+
+    if (!user.must_change_password) {
+      return res.status(400).json({ message: 'Password change is not required for this account.' });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Current credentials are invalid.' });
+    }
+
+    const newHash = await bcrypt.hash(newPassword, 10);
+    await pool.query(
+      `UPDATE users
+       SET password_hash = $1, must_change_password = FALSE
+       WHERE user_id = $2`,
+      [newHash, user.user_id]
+    );
+
+    return res.status(200).json({
+      message: 'Password changed successfully.',
+      user: {
+        user_id: user.user_id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (err) {
+    console.error(err.message);
+    return res.status(500).send('Server Error');
+  }
+});
+
+// Password reset
+const resetOtpStore = new Map();
+
+router.post('/send-reset-otp', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required.' });
+    }
+
+    const user = await pool.query('SELECT user_id FROM users WHERE email = $1 AND is_verified = TRUE', [email]);
+    if (user.rows.length === 0) {
+      return res.status(404).json({ message: 'No verified account found with this email.' });
+    }
+
+    const otp = generateNumericOtp();
+    const otpHash = await bcrypt.hash(otp, 10);
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+    resetOtpStore.set(email, { otpHash, expiresAt, verified: false });
+
+    await sendEmail({
+      email,
+      subject: 'Your Password Reset Code',
+      html: `<h1>Your Government of India Public Grievance Portal password reset code is: ${otp}</h1><p>This code will expire in 5 minutes.</p>`,
+    });
+
+    res.status(200).json({ message: 'Password reset OTP has been sent to your email.' });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+});
+
+router.post('/verify-reset-otp', async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      return res.status(400).json({ message: 'Please provide email and OTP.' });
+    }
+
+    const storedData = resetOtpStore.get(email);
+    if (!storedData) {
+      return res.status(400).json({ message: 'OTP not found or expired. Please request a new one.' });
+    }
+
+    const { otpHash, expiresAt } = storedData;
+    if (new Date() > new Date(expiresAt)) {
+      resetOtpStore.delete(email);
+      return res.status(400).json({ message: 'OTP has expired. Please request a new one.' });
+    }
+
+    const isValidOtp = await bcrypt.compare(otp, otpHash);
+    if (!isValidOtp) {
+      return res.status(400).json({ message: 'OTP incorrect. Please try again.' });
+    }
+
+    resetOtpStore.set(email, { ...storedData, verified: true });
+    return res.status(200).json({ message: 'OTP verified successfully.' });
+  } catch (err) {
+    console.error(err.message);
+    return res.status(500).send('Server Error');
+  }
+});
+
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { email, otp, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Please provide email and new password.' });
+    }
+
+    const storedData = resetOtpStore.get(email);
+    if (!storedData) {
+      return res.status(400).json({ message: 'OTP not found or expired. Please request a new one.' });
+    }
+
+    const { otpHash, expiresAt, verified } = storedData;
+    if (new Date() > new Date(expiresAt)) {
+      resetOtpStore.delete(email);
+      return res.status(400).json({ message: 'OTP has expired. Please request a new one.' });
+    }
+
+    if (!verified) {
+      if (!otp) {
+        return res.status(400).json({ message: 'OTP verification is required before resetting password.' });
+      }
+
+      const isValidOtp = await bcrypt.compare(otp, otpHash);
+      if (!isValidOtp) {
+        return res.status(400).json({ message: 'OTP incorrect. Please try again.' });
+      }
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const updatedUser = await pool.query(
+      `UPDATE users
+       SET password_hash = $1, must_change_password = FALSE, is_verified = TRUE
+       WHERE email = $2
+       RETURNING user_id, name, email, role`,
+      [passwordHash, email]
+    );
+
+    if (updatedUser.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    resetOtpStore.delete(email);
+    return res.status(200).json({ message: 'Password reset successful.' });
+  } catch (err) {
+    console.error(err.message);
+    return res.status(500).send('Server Error');
+  }
+});
+
 
 // OAUTH
-const FRONTEND_URL = "http://localhost:5173";
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
 // Step 1: Redirect user to Google login
 router.get(
@@ -311,19 +510,30 @@ router.get(
 // Step 2: Handle Google callback and redirect to frontend
 router.get(
   '/google/callback',
-  passport.authenticate('google', { session: false, failureRedirect: `${FRONTEND_URL}/login` }),
+  passport.authenticate('google', { session: false, failureRedirect: `${FRONTEND_URL}/?error=oauth_failed` }),
   (req, res) => {
     try {
       const token = generateToken(req.user.user_id);
 
-      // Use req.user.role, not user.role
-      res.redirect(`${FRONTEND_URL}/auth-success?token=${token}&role=${req.user.role}`);
+      const safeUser = {
+        user_id: req.user.user_id,
+        name: req.user.name,
+        email: req.user.email,
+        role: req.user.role,
+      };
+      const user = encodeURIComponent(JSON.stringify(safeUser));
+      const userRole = encodeURIComponent(req.user.role);
+
+      res.redirect(
+        `${FRONTEND_URL}/auth-success?token=${token}&role=${userRole}&user=${user}`
+      );
     } catch (err) {
       console.error(err);
-      res.redirect(`${FRONTEND_URL}/login?error=oauth_failed`);
+      res.redirect(`${FRONTEND_URL}/?error=oauth_failed`);
     }
   }
 );
+
 
 
 // Check if email exists

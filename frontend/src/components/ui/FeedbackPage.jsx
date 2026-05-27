@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { FaStar } from "react-icons/fa";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { apiUrl, authHeaders, formatDate } from "../../lib/api";
 
 // const demoComplaint = {
 //   id: 123,
@@ -15,23 +15,32 @@ import { useNavigate } from "react-router-dom";
 // };
 
 const FeedbackPage = () => {
-  const token = localStorage.getItem("token");
   const navigate = useNavigate();
 
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
   const [review, setReview] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [message, setMessage] = useState("");
 
   const location = useLocation();
   const { complaint } = location.state || {}; 
-  console.log("Complaint object:", complaint);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // console.log({ complaintId: demoComplaint.id, rating, review });
+    if (!complaint?.id) {
+      setMessage("Grievance details are missing. Please return to your dashboard and try again.");
+      return;
+    }
+    if (rating === 0) {
+      setMessage("Please choose a star rating before submitting.");
+      return;
+    }
 
     try {
+      setIsSubmitting(true);
+      setMessage("");
 
       const payload = { 
         complaint_id: complaint.id,
@@ -40,18 +49,14 @@ const FeedbackPage = () => {
       };
 
       const response = await axios.post(
-        "http://localhost:5000/api/feedback",  // 👈 your backend route
+        apiUrl("/api/feedback"),
         payload,
         {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+          headers: authHeaders({ "Content-Type": "application/json" }),
         }
       );
 
       if (response.status === 201) {
-        alert("Feedback submitted successfully!");
         e.target.reset();
       }
 
@@ -65,43 +70,53 @@ const FeedbackPage = () => {
 
     } catch (error) {
       console.error("Error submitting feedback:", error);
-      alert(error.response?.data?.message || "Failed to submit feedback.");
+      setMessage(error.response?.data?.message || "Failed to submit feedback. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
 
   };
 
+  if (!complaint) {
+    return (
+      <div className="app-shell flex min-h-screen items-center justify-center p-6">
+        <div className="surface-panel max-w-md rounded-2xl p-8 text-center">
+          <h1 className="text-2xl font-bold text-teal-900">Grievance not found</h1>
+          <p className="mt-3 text-sm text-gray-600">
+            Feedback is opened from a resolved grievance in your dashboard.
+          </p>
+          <button className="btn-primary mt-6 px-5 py-2" onClick={() => navigate("/citizen-dashboard")}>
+            Back to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-[#FCF5EE] flex flex-col items-center pt-24 px-6">
+    <div className="app-shell flex min-h-screen flex-col items-center px-4 pt-24 sm:px-6">
       {/* Page Header */}
-      <div className="max-w-4xl w-full mb-8 text-center">
-        <h1 className="text-3xl font-bold text-[#d55d1f] mb-2">Complaint Feedback</h1>
+      <div className="mb-8 w-full max-w-4xl text-center">
+        <h1 className="mb-2 text-3xl font-bold text-teal-900 sm:text-4xl">Grievance Feedback</h1>
         <p className="text-gray-700 text-sm sm:text-base">
-          Your complaint has been resolved! Please provide your feedback below.
+          Your grievance has been resolved. Please provide feedback on the service response.
         </p>
-        <a
-          href="https://tattletent.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-blue-600 hover:underline italic"
-        >
-          Visit TattleTent Website
-        </a>
       </div>
 
       {/* Complaint Card */}
-      <div className="w-full max-w-4xl bg-white shadow-md rounded-2xl p-6 mb-8">
-        <h2 className="text-xl font-semibold text-[#A0522D] mb-2">{complaint.title}</h2>
+      <div className="surface-panel mb-8 w-full max-w-4xl rounded-2xl p-6">
+        <h2 className="text-xl font-semibold text-teal-900 mb-2">{complaint.title}</h2>
         <p className="text-gray-500 text-sm mb-1">
           <span className="font-medium">Category:</span> {complaint.category}
         </p>
         <p className="text-gray-500 text-sm mb-1">
           <span className="font-medium">Date:</span>{" "}
-          {new Date(complaint.update).toLocaleDateString()}
+          {formatDate(complaint.update)}
         </p>
         <p className="text-gray-700 mb-3">{complaint.description}</p>
         {complaint.photo && (
           <img
-            src={complaint.photo}
+            src={complaint.photo?.startsWith("http") ? complaint.photo : apiUrl(complaint.photo)}
             alt="Complaint"
             className="w-full max-h-64 object-cover rounded-lg mb-3"
           />
@@ -112,7 +127,7 @@ const FeedbackPage = () => {
       {!submitted ? (
         <form
           onSubmit={handleSubmit}
-          className="w-full max-w-4xl bg-white shadow-md rounded-2xl p-6"
+          className="surface-panel w-full max-w-4xl rounded-2xl p-6"
         >
           <h3 className="text-lg font-semibold text-[#A0522D] mb-3">Rate the Resolution</h3>
           {/* Star Rating */}
@@ -125,7 +140,7 @@ const FeedbackPage = () => {
                     type="radio"
                     name="rating"
                     value={ratingValue}
-                    className="hidden"
+                    className="sr-only"
                     onClick={() => setRating(ratingValue)}
                   />
                   <FaStar
@@ -139,6 +154,7 @@ const FeedbackPage = () => {
               );
             })}
           </div>
+          {message && <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{message}</p>}
 
           {/* Written Review */}
           <div className="mb-6">
@@ -160,13 +176,14 @@ const FeedbackPage = () => {
           {/* Submit Button */}
           <button
             type="submit"
-            className="w-full py-3 bg-[#A0522D] hover:bg-[#8B4513] text-white font-medium rounded-lg transition-colors"
+            disabled={isSubmitting}
+            className="btn-primary w-full py-3 disabled:cursor-not-allowed"
           >
-            Submit Feedback
+            {isSubmitting ? "Submitting..." : "Submit Feedback"}
           </button>
         </form>
       ) : (
-        <div className="w-full max-w-4xl bg-white shadow-md rounded-2xl p-6 text-center">
+        <div className="surface-panel w-full max-w-4xl rounded-2xl p-6 text-center">
           <h3 className="text-lg font-semibold text-[#A0522D] mb-3">Thank You!</h3>
           <p className="text-gray-700">
             Your feedback has been submitted successfully.

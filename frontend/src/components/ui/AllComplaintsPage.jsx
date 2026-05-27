@@ -2,13 +2,17 @@ import React, { useState, useEffect } from "react";
 import Logo from './Logo'
 import { useNavigate } from "react-router-dom";
 import { jsPDF } from "jspdf";
+import { apiUrl, formatDate, getStoredUser, normalizeStatus, statusClassName } from "../../lib/api";
 
 
 const AllComplaintsPage = () => {
 
   const navigate=useNavigate();
+  const [user] = useState(() => getStoredUser());
 
   const [complaints, setComplaints] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
  /*  const [complaints, setComplaints] = useState([
     { id: 1, category: "Water Leak", location: "Tent #5", status: "Pending", citizen: "John Doe", priority: null, description: "Leak near Tent #5, pipe burst", assignedTo: null },
     { id: 2, category: "Garbage", location: "Central Park", status: "In Progress", citizen: "Mike Johnson", priority: "Low", description: "Overflowing bin near park", assignedTo: "John Doe" },
@@ -24,7 +28,9 @@ const AllComplaintsPage = () => {
     const fetchComplaintsByUser = async () => {
     try {
   
-      const response = await fetch(`http://localhost:5000/api/complaints/search`);
+      setIsLoading(true);
+      setErrorMessage("");
+      const response = await fetch(apiUrl("/api/complaints/search"));
   
       if (!response.ok) throw new Error("Failed to fetch complaints");
   
@@ -38,12 +44,16 @@ const AllComplaintsPage = () => {
         description: c.description,
         assignedTo: c.assigned_to,
         photo: c.photo,
-        date: new Date(c.submitted_at).toLocaleDateString()
+        citizen: c.citizen_name,
+        date: formatDate(c.submitted_at)
       })));
   
     } catch (err) {
       console.error("Error fetching complaints:", err);
       setComplaints([]); // fallback to empty array
+      setErrorMessage("Unable to load complaints. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
   
@@ -61,13 +71,19 @@ const AllComplaintsPage = () => {
 
   const [currentPage, setCurrentPage] = useState(1);
   const complaintsPerPage = 5; // number of complaints per page
+  const dashboardRoute = user?.role === "Citizen"
+    ? "/citizen-dashboard"
+    : user?.role === "Staff"
+      ? "/staff-dashboard"
+      : "/admin-dashboard";
 
   //const staffList = ["John Doe", "Jane Smith", "Mike Johnson", "Sarah Lee"];
 
   const filteredComplaints = complaints.filter(c => {
-    const matchesStatus = filterStatus === "all" || c.status.toLowerCase() === filterStatus.toLowerCase();
-    const matchesCategory = filterCategory === "all" || c.category.toLowerCase() === filterCategory.toLowerCase();
-    const matchesSearch = searchTerm === "" || c.category.toLowerCase().includes(searchTerm.toLowerCase()) || c.location.toLowerCase().includes(searchTerm.toLowerCase());
+    const normalizedStatus = normalizeStatus(c.status).toLowerCase();
+    const matchesStatus = filterStatus === "all" || normalizedStatus === filterStatus.toLowerCase();
+    const matchesCategory = filterCategory === "all" || (c.category || "").toLowerCase() === filterCategory.toLowerCase();
+    const matchesSearch = searchTerm === "" || (c.category || "").toLowerCase().includes(searchTerm.toLowerCase()) || (c.location || "").toLowerCase().includes(searchTerm.toLowerCase());
     return matchesStatus && matchesCategory && matchesSearch;
   });
 
@@ -75,7 +91,7 @@ const AllComplaintsPage = () => {
   const indexOfLast = currentPage * complaintsPerPage;
   const indexOfFirst = indexOfLast - complaintsPerPage;
   const currentComplaints = filteredComplaints.slice(indexOfFirst, indexOfLast);
-  const totalPages = Math.ceil(filteredComplaints.length / complaintsPerPage);
+  const totalPages = Math.max(1, Math.ceil(filteredComplaints.length / complaintsPerPage));
 
  /* const handleAssign = (complaint) => setAssignStaff(complaint);
   const confirmAssign = (staffName) => {
@@ -97,7 +113,7 @@ const AllComplaintsPage = () => {
   const exportComplaintPDF = (complaint) => {
   const doc = new jsPDF();
   doc.setFontSize(18);
-  doc.text(`Complaint #${complaint.id}`, 14, 22);
+  doc.text(`Grievance #${complaint.id}`, 14, 22);
   doc.setFontSize(12);
   doc.text(`Category: ${complaint.category}`, 14, 40);
   doc.text(`Location: ${complaint.location}`, 14, 50);
@@ -107,32 +123,32 @@ const AllComplaintsPage = () => {
   doc.text(`Date: ${complaint.date}`, 14, 90);
   doc.text(`Description: ${complaint.description}`, 14, 100, { maxWidth: 180 });
   if (complaint.solution) doc.text(`Solution: ${complaint.solution}`, 14, 120, { maxWidth: 180 });
-  doc.save(`Complaint_${complaint.id}.pdf`);
+  doc.save(`Grievance_${complaint.id}.pdf`);
 };
 
 
   const exportCSV = () => {
     const csvContent = [
       ["ID", "Category", "Location", "Status", "Date", "Priority", "Assigned To", "Description"],
-      ...complaints.map(c => [c.id, c.category, c.location, c.status, c.date, c.priority || "", c.assignedTo || "", c.description])
-    ].map(e => e.join(",")).join("\n");
+      ...complaints.map(c => [c.id, c.category, c.location, normalizeStatus(c.status), c.date, c.priority || "", c.assignedTo || "", c.description])
+    ].map(row => row.map((value) => `"${String(value ?? "").replaceAll('"', '""')}"`).join(",")).join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = "all_complaints.csv";
+    link.download = "all_grievances.csv";
     link.click();
   };
 
   return (
-    <div className="min-h-screen bg-[#FCF5EE] font-sans p-6 pt-32">
-    <div className="fixed top-0 left-0 w-full h-24 flex items-center justify-between px-8 bg-white shadow-md z-50">
+    <div className="app-shell min-h-screen font-sans px-6 pb-6">
+    <div className="premium-nav fixed top-0 left-0 w-full h-24 flex items-center justify-between px-8 z-50">
     <Logo/>
     <div className="flex items-center gap-4">
-      <button className="rounded-full bg-[#d55d1f] hover:bg-[#b54a16] text-white px-5 py-2" onClick={() => navigate("/")}>
+      <button className="btn-secondary px-5 py-2.5" onClick={() => navigate("/")}>
         Home
       </button>
-      <button className="rounded-full bg-[#d55d1f] hover:bg-[#b54a16] text-white px-5 py-2" onClick={() => navigate("/admin-dashboard")}>
+      <button className="btn-primary px-5 py-2.5" onClick={() => navigate(dashboardRoute)}>
         My Dashboard
       </button>
     </div>
@@ -140,16 +156,22 @@ const AllComplaintsPage = () => {
 
  
   <div className="text-center mb-8">
-    <h2 className="text-5xl font-bold text-orange-700 mb-2">All Complaints</h2>
-    <p className="text-gray-700 text-lg">View and Export all complaints efficiently.</p>
+    <h2 className="text-5xl font-bold text-teal-900 mb-2">All Grievances</h2>
+    <p className="text-gray-700 text-lg">View, filter, and export public grievance records.</p>
   </div>
 
       {/* Search & Filters */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+      {errorMessage && (
+        <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-medium text-red-800 shadow-sm">
+          {errorMessage}
+        </div>
+      )}
+
+      <div className="surface-panel flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6 p-4">
         <input
           type="text"
           placeholder="Search by keyword..."
-          className="px-4 py-2 border rounded-lg w-full lg:w-1/3 focus:ring-2 focus:ring-orange-300"
+          className="px-4 py-2 border rounded-lg w-full lg:w-1/3 focus:ring-2 focus:ring-teal-100"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
@@ -161,7 +183,7 @@ const AllComplaintsPage = () => {
             onChange={(e) => setFilterStatus(e.target.value)}
           >
             <option value="all">All Status</option>
-            <option value="pending">New</option>
+            <option value="new">New</option>
             <option value="in progress">In Progress</option>
             <option value="resolved">Resolved</option>
           </select>
@@ -180,7 +202,7 @@ const AllComplaintsPage = () => {
 
           <button
             onClick={exportCSV}
-            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+            className="btn-secondary"
           >
             Export CSV
           </button>
@@ -192,7 +214,7 @@ const AllComplaintsPage = () => {
               setFilterStatus("all");
               setCurrentPage(1);
             }}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+            className="btn-muted"
           >
             Clear Filters
           </button>
@@ -200,7 +222,7 @@ const AllComplaintsPage = () => {
       </div>
 
       {/* Complaints Table */}
-      <div className="overflow-x-auto rounded-lg border border-gray-300">
+      <div className="table-shell overflow-x-auto">
         <table className="min-w-full divide-y divide-blue-200">
           <thead className="bg-white">
             <tr>
@@ -210,14 +232,20 @@ const AllComplaintsPage = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-blue-200 bg-white">
-            {currentComplaints.map(c=>(
+            {isLoading ? (
+              <tr>
+                <td colSpan="8" className="text-center p-8 text-gray-500">
+                  Loading grievances...
+                </td>
+              </tr>
+            ) : currentComplaints.length > 0 ? currentComplaints.map(c=>(
               <tr key={c.id} className="hover:bg-blue-50 transition">
                 <td className="p-4 font-bold">{c.id}</td>
                 <td className="p-4">{c.category}</td>
                 <td className="p-4">{c.location}</td>
                 <td className="p-4">
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${c.status==="Resolved"?"bg-green-100 text-green-800":c.status==="In Progress"?"bg-yellow-100 text-yellow-800":"bg-red-100 text-red-800"}`}>
-                    {c.status}
+                  <span className={statusClassName(c.status)}>
+                    {normalizeStatus(c.status)}
                   </span>
                 </td>
                 <td className="p-4">{c.date}</td>
@@ -225,20 +253,26 @@ const AllComplaintsPage = () => {
                 <td className="p-4">{c.assignedTo || "Unassigned"}</td>
                 <td className="p-4 flex gap-2">
   <button
-    className="px-3 py-1.5 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700 transition"
+    className="btn-primary px-3 py-1.5 text-sm"
     onClick={() => handleView(c)}
   >
     OPEN
   </button>
   <button
-    className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition"
+    className="btn-secondary px-3 py-1.5 text-sm"
     onClick={() => exportComplaintPDF(c)}
   >
     PDF
   </button>
 </td>
               </tr>
-            ))}
+            )) : (
+              <tr>
+                <td colSpan="8" className="text-center p-8 text-gray-500">
+                  No grievances match the current filters.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -256,7 +290,7 @@ const AllComplaintsPage = () => {
           {[...Array(totalPages)].map((_, i) => (
             <button
               key={i}
-              className={`px-3 py-1 rounded-lg ${currentPage === i+1 ? "bg-orange-600 text-white" : "bg-gray-200 hover:bg-gray-300"}`}
+              className={`px-3 py-1 rounded-lg ${currentPage === i+1 ? "bg-teal-900 text-white" : "bg-gray-200 hover:bg-gray-300"}`}
               onClick={() => setCurrentPage(i+1)}
             >
               {i+1}
@@ -277,7 +311,7 @@ const AllComplaintsPage = () => {
         <Modal title={`Assign Complaint #${assignStaff.id}`} onClose={()=>setAssignStaff(null)}>
           <div className="space-y-3">
             {staffList.map(staff=>(
-              <button key={staff} className="w-full px-4 py-2 bg-orange-100 rounded-lg hover:bg-orange-200 transition" onClick={()=>confirmAssign(staff)}>
+              <button key={staff} className="w-full px-4 py-2 bg-teal-50 rounded-lg hover:bg-teal-100 transition" onClick={()=>confirmAssign(staff)}>
                 {staff}
               </button>
             ))}
@@ -312,7 +346,7 @@ const AllComplaintsPage = () => {
 
             <div className="flex justify-end gap-3">
               <button className="px-6 py-3 bg-gray-200 rounded-xl" onClick={()=>setSelectedComplaint(null)}>Cancel</button>
-              <button className="px-6 py-3 bg-orange-600 text-white rounded-xl" onClick={saveUpdate}>Save</button>
+              <button className="px-6 py-3 bg-teal-900 text-white rounded-xl" onClick={saveUpdate}>Save</button>
             </div>
           </div>
         </Modal>
@@ -320,30 +354,34 @@ const AllComplaintsPage = () => {
 
       {isViewOpen && selectedComplaint && (
   <div
-    className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+    className="modal-backdrop"
     onClick={() => setIsViewOpen(false)}
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="all-complaint-details-title"
   >
     <div
-      className="bg-white rounded-2xl w-full max-w-4xl h-[85vh] relative overflow-y-auto p-6"
+      className="modal-shell w-full max-w-4xl h-[85vh] relative overflow-y-auto p-6"
       onClick={(e) => e.stopPropagation()}
     >
       {/* Close button */}
       <button
         className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-xl"
         onClick={() => setIsViewOpen(false)}
+        aria-label="Close complaint details"
       >
         ✕
       </button>
 
       {/* Complaint Details */}
-      <h2 className="text-3xl font-bold text-orange-600 mb-4">
-        Complaint #{selectedComplaint.id}: {selectedComplaint.category}
+      <h2 id="all-complaint-details-title" className="text-3xl font-bold text-teal-900 mb-4">
+        Grievance #{selectedComplaint.id}: {selectedComplaint.category}
       </h2>
 
       <div className="space-y-3">
         <p><strong>Description:</strong> {selectedComplaint.description}</p>
         <p><strong>Location:</strong> {selectedComplaint.location}</p>
-        <p><strong>Status:</strong> {selectedComplaint.status}</p>
+        <p><strong>Status:</strong> {normalizeStatus(selectedComplaint.status)}</p>
         <p><strong>Priority:</strong> {selectedComplaint.priority}</p>
         <p><strong>Reported by:</strong> {selectedComplaint.citizen}</p>
         <p><strong>Date:</strong> {selectedComplaint.date}</p>
@@ -356,7 +394,7 @@ const AllComplaintsPage = () => {
       {selectedComplaint.photo && (
         <div className="mt-6 flex justify-center">
           <img
-            src={`http://localhost:5000${selectedComplaint.photo}`}
+            src={apiUrl(selectedComplaint.photo)}
             alt={selectedComplaint.category}
             className="max-w-full max-h-[400px] rounded-lg shadow-md object-contain"
           />
@@ -371,14 +409,5 @@ const AllComplaintsPage = () => {
     </div>
   );
 };
-
-const Modal = ({ title, children, onClose }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
-    <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl p-6" onClick={e=>e.stopPropagation()}>
-      <h3 className="text-2xl font-bold text-orange-600 mb-4">{title}</h3>
-      {children}
-    </div>
-  </div>
-);
 
 export default AllComplaintsPage;

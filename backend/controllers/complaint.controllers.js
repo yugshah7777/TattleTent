@@ -13,9 +13,13 @@ import {
 
 import { notifyStatusChange } from "../services/notification.service.js";
 
+const VALID_STATUSES = new Set(["New", "IN_PROGRESS", "In Progress", "Resolved"]);
+const VALID_PRIORITIES = new Set(["Low", "Medium", "High"]);
+
 // ✅ Create a new complaint
 const createComplaint = asynchandler(async (req, res) => {
-  const { title, description, category, location, user_id, latitude, longitude,priority } = Object.assign({}, req.body);
+  const { title, description, category, location, latitude, longitude,priority } = Object.assign({}, req.body);
+  const user_id = req.user?.user_id || req.body.user_id;
   if (!user_id || !title || !description || !category || !location) {
     return res
       .status(400)
@@ -58,8 +62,20 @@ const updateComplaintStatus = asynchandler(async (req, res) => {
   const { status, staffId, priority } = req.body; 
   const complaintId = parseInt(id, 10);
 
+  if (!Number.isInteger(complaintId)) {
+      return res.status(400).json(new ApiResponse(400, "Valid complaint ID is required."));
+  }
+
   if (!status) {
       return res.status(400).json(new ApiResponse(400, "Status is required for this update."));
+  }
+
+  if (!VALID_STATUSES.has(status)) {
+      return res.status(400).json(new ApiResponse(400, "Invalid complaint status."));
+  }
+
+  if (priority && !VALID_PRIORITIES.has(priority)) {
+      return res.status(400).json(new ApiResponse(400, "Invalid complaint priority."));
   }
 
   const updatedComplaint = await updateComplaintStatusInDB(complaintId, status, staffId, priority);
@@ -83,8 +99,16 @@ const updateComplaintPriority = asynchandler(async (req, res) => {
   const { priority } = req.body;
   const complaintId = parseInt(id, 10);
 
+  if (!Number.isInteger(complaintId)) {
+      return res.status(400).json(new ApiResponse(400, "Valid complaint ID is required."));
+  }
+
   if (!priority) {
       return res.status(400).json(new ApiResponse(400, "Priority is required for this update."));
+  }
+
+  if (!VALID_PRIORITIES.has(priority)) {
+      return res.status(400).json(new ApiResponse(400, "Invalid complaint priority."));
   }
 
   const updatedComplaint = await updateComplaintPriorityInDB(complaintId, priority);
@@ -103,7 +127,15 @@ const updateComplaintPriority = asynchandler(async (req, res) => {
 // ✅ Delete Complaint
 const deleteComplaint = asynchandler(async (req, res) => {
   const { id } = req.params;
-  const deleted = await deleteComplaintFromDB(id);
+  const complaintId = parseInt(id, 10);
+
+  if (!Number.isInteger(complaintId)) {
+    return res
+      .status(400)
+      .json(new ApiResponse(400, "Valid complaint ID is required."));
+  }
+
+  const deleted = await deleteComplaintFromDB(complaintId);
 
   if (!deleted)
     return res

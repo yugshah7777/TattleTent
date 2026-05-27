@@ -47,4 +47,18 @@ const adminOnly = (req, res, next) => {
   }
 };
 
-export { protect, adminOnly };
+const staffOrAdmin = (req, res, next) => {
+  if (
+    req.user &&
+    (req.user.role === 'Staff' ||
+      req.user.role === 'Admin' ||
+      req.user.role === 'Ringmaster' ||
+      req.user.role === 'Groundmaster')
+  ) {
+    next();
+  } else {
+    return res.status(403).json({ message: 'Access denied. Staff or admins only.' });
+  }
+};
+
+export { protect, adminOnly, staffOrAdmin };

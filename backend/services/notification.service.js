@@ -19,12 +19,14 @@ export const notifyStatusChange = async (complaintId) => {
     if (result.rowCount === 0) return;
     const c = result.rows[0];
 
-    const FEEDBACK_URL = `https://yourdomain.com/feedback?complaintId=${complaint.complaint_id}`;
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    const FEEDBACK_URL = `${frontendUrl}/feedback-page?complaintId=${c.complaint_id}`;
+    let feedbackContent = "";
 
       // Check if the status is resolved to include the special link
     if (c.status === 'Resolved') {
       feedbackContent = `
-        <p>The TattleTent team is pleased to inform you that your complaint is now fully resolved!</p>
+        <p>The Government of India Public Grievance Portal is pleased to inform you that your grievance is now fully resolved.</p>
         <p>To help us improve our service, please take a moment to provide feedback on your experience:</p>
         <p style="text-align: center; margin: 20px 0;">
             <a href="${FEEDBACK_URL}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-align: center; text-decoration: none; display: inline-block; border-radius: 5px;">
@@ -37,13 +39,13 @@ export const notifyStatusChange = async (complaintId) => {
     // 🧠 Email to citizen
     await sendEmail({
         email: c.citizen_email,
-        subject: `Update on Complaint #${c.complaint_id}: Status is now "${c.status}"`,
+        subject: `Update on Grievance #${c.complaint_id}: Status is now "${c.status}"`,
         html: `
-            <h2>Complaint Status Updated</h2>
+            <h2>Grievance Status Updated</h2>
             <p>Hello,</p>
-            <p>This is a notification that the status of your complaint has been changed.</p>
+            <p>This is a notification that the status of your grievance has been changed.</p>
             
-            <p><b>Complaint Title:</b> ${c.title}</p>
+            <p><b>Grievance Title:</b> ${c.title}</p>
             <p><b>Reference ID:</b> #${c.complaint_id}</p>
             <p><b>New Status:</b> <span style="font-weight: bold; color: #007bff;">${c.status}</span></p>
 
@@ -51,10 +53,10 @@ export const notifyStatusChange = async (complaintId) => {
             ${feedbackContent}
             <!-- End conditional content -->
 
-            <p>You can view full details and track the progress from your TattleTent dashboard.</p>
+            <p>You can view full details and track progress from your public grievance dashboard.</p>
             <br/>
             <p>Regards,</p>
-            <p>The TattleTent Team</p>
+            <p>Government of India Public Grievance Portal</p>
         `,
     });
 
@@ -77,8 +79,8 @@ export const notifyOverdueReminder = async () => {
         c.complaint_id, c.title, c.category, c.priority, c.sla_deadline,
         u.email AS staff_email, u.name AS staff_name
       FROM complaints c
-      JOIN users u ON c.assigned_to = u.user_id
-      WHERE c.status IN ('NEW', 'IN_PROGRESS')
+      JOIN users u ON c.staff_id = u.user_id
+      WHERE c.status IN ('New', 'IN_PROGRESS')
       AND c.sla_deadline IS NOT NULL
       AND c.sla_deadline > NOW()
       AND c.sla_deadline < NOW() + INTERVAL '2 day';

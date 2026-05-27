@@ -8,7 +8,7 @@ import { notifyOverdueReminder } from "../services/notification.service.js";
  * Checks all complaints whose SLA deadline has passed and status != RESOLVED
  * Updates their status to "ESCALATED" and optionally reassigns staff
  */
-cron.schedule("* * * * *", async () => {
+cron.schedule("0 */6 * * *", async () => {
   console.log("⏰ Running scheduled SLA escalation check...");
 
   try {

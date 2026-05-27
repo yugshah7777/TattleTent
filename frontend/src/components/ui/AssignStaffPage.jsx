@@ -3,11 +3,100 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from "recharts";
 import Logo from "./Logo"
 import axios from "axios";
+import { apiUrl, authHeaders, getStoredUser } from "../../lib/api";
+import useBodyScrollLock from "../../lib/useBodyScrollLock";
+
+const clampScore = (value) => Math.max(0, Math.min(100, Math.round(value)));
+
+const getSlaHours = (priority) => {
+  if (priority === "High") return 24;
+  if (priority === "Medium") return 48;
+  return 72;
+};
+
+const getPriorityWeight = (priority) => {
+  if (priority === "High") return 1.35;
+  if (priority === "Medium") return 1.1;
+  return 0.85;
+};
+
+const getHoursBetween = (start, end) => {
+  const startDate = start ? new Date(start) : null;
+  const endDate = end ? new Date(end) : null;
+
+  if (!startDate || !endDate || Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+    return null;
+  }
+
+  return Math.max(0, (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60));
+};
+
+const buildStaffAudit = (records) => {
+  const assigned = Array.isArray(records) ? records : [];
+  const resolved = assigned.filter((record) => record.status === "Resolved");
+  const active = assigned.filter((record) => record.status === "IN_PROGRESS");
+  const resolvedWithTime = resolved
+    .map((record) => ({
+      ...record,
+      resolutionHours: getHoursBetween(record.submitted_at, record.updated_at),
+    }))
+    .filter((record) => record.resolutionHours !== null);
+
+  const total = assigned.length;
+  const assignedWeight = assigned.reduce((sum, record) => sum + getPriorityWeight(record.priority), 0);
+  const resolvedWeight = resolved.reduce((sum, record) => sum + getPriorityWeight(record.priority), 0);
+  const completionRate = assignedWeight ? (resolvedWeight / assignedWeight) * 100 : 0;
+  const timelyWeight = resolvedWithTime.reduce((sum, record) => {
+    const slaHours = getSlaHours(record.priority);
+    return sum + Math.min(1, slaHours / Math.max(1, record.resolutionHours)) * getPriorityWeight(record.priority);
+  }, 0);
+  const timeWeight = resolvedWithTime.reduce((sum, record) => sum + getPriorityWeight(record.priority), 0);
+  const timelinessRate = timeWeight ? (timelyWeight / timeWeight) * 100 : 0;
+  const documentationScore = total
+    ? assigned.reduce((sum, record) => {
+        const fields = [record.title, record.description, record.category, record.location, record.priority];
+        return sum + (fields.filter(Boolean).length / fields.length) * 100;
+      }, 0) / total
+    : 0;
+  const consistencyScore = total
+    ? 100 - Math.min(45, (Math.abs(resolved.length - active.length) / Math.max(1, total)) * 70)
+    : 0;
+  const averageResolutionHours = resolvedWithTime.length
+    ? resolvedWithTime.reduce((sum, record) => sum + record.resolutionHours, 0) / resolvedWithTime.length
+    : 0;
+  const efficiencyScore = resolvedWithTime.length
+    ? resolvedWithTime.reduce((sum, record) => {
+        const slaHours = getSlaHours(record.priority);
+        const ratio = Math.min(1.15, slaHours / Math.max(1, record.resolutionHours));
+        return sum + (ratio / 1.15) * 100;
+      }, 0) / resolvedWithTime.length
+    : 0;
+
+  const metrics = [
+    { name: "Completion", score: clampScore(completionRate), weight: 30 },
+    { name: "SLA Timeliness", score: clampScore(timelinessRate), weight: 25 },
+    { name: "Documentation", score: clampScore(documentationScore), weight: 20 },
+    { name: "Efficiency", score: clampScore(efficiencyScore), weight: 15 },
+    { name: "Consistency", score: clampScore(consistencyScore), weight: 10 },
+  ];
+  const rawWeightedScore = metrics.reduce((sum, metric) => sum + metric.score * (metric.weight / 100), 0);
+  const confidence = Math.min(1, total / 5);
+
+  return {
+    metrics,
+    score: total ? clampScore(rawWeightedScore * confidence + 70 * (1 - confidence)) : 0,
+    confidence: clampScore(confidence * 100),
+    assigned: total,
+    resolved: resolved.length,
+    active: active.length,
+    averageResolutionHours: Math.round(averageResolutionHours),
+  };
+};
 
 const AssignStaffPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem("user"));
+  const [user] = useState(() => getStoredUser());
 
   const { complaint } = location.state || {};
   const [staffList, setstaffList] = useState([]);
@@ -15,18 +104,12 @@ const AssignStaffPage = () => {
   const [priorityModalOpen, setPriorityModalOpen] = useState(false);
   const [selectedPriority, setSelectedPriority] = useState("Low");
   const [staffToAssign, setStaffToAssign] = useState(null);
+  const [selectedStaff, setSelectedStaff] = useState(null);
+  const [isLoadingStaff, setIsLoadingStaff] = useState(true);
+  const [isAssigning, setIsAssigning] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-
-
-  const handleAssign = (staffId) => {
-    axios.put(`http://localhost:5000/api/complaints/status/${complaint.id}`, {
-      status: "In Progress",
-      staffId: staffId,
-      priority: selectedPriority,
-    }).then(() => {
-      navigate("/admin-dashboard"); // go back after saving
-    }).catch(err => console.error(err));
-  };
+  useBodyScrollLock(Boolean(selectedStaff) || priorityModalOpen);
 
 
   const fetchStaff = async () => {
@@ -34,7 +117,11 @@ const AssignStaffPage = () => {
       if (!user?.user_id) return;
 
       const queryParams = new URLSearchParams({ role: "Staff" }).toString();
-      const response = await fetch(`http://localhost:5000/api/users/search?${queryParams}`);
+      setIsLoadingStaff(true);
+      setErrorMessage("");
+      const response = await fetch(apiUrl(`/api/users/search?${queryParams}`), {
+        headers: authHeaders(),
+      });
 
       if (!response.ok) throw new Error("Failed to fetch staff");
 
@@ -49,6 +136,9 @@ const AssignStaffPage = () => {
     } catch (err) {
       console.error("Error fetching staff:", err);
       setstaffList([]); // fallback to empty array
+      setErrorMessage("Unable to load staff members. Please try again.");
+    } finally {
+      setIsLoadingStaff(false);
     }
   };
 
@@ -56,18 +146,19 @@ const AssignStaffPage = () => {
     if (user?.user_id) {
       fetchStaff();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  const [selectedStaff, setSelectedStaff] = useState(null);
-
-  if (!complaint) {
-    navigate("/admin-dashboard"); // fallback
-  }
+  useEffect(() => {
+    if (!complaint) {
+      navigate("/admin-dashboard");
+    }
+  }, [complaint, navigate]);
 
   const fetchStaffPerformance = async (staff) => {
   try {
-    // ✅ Axios automatically parses JSON, so just send staff_id as query param
-    const response = await axios.get(`http://localhost:5000/api/complaints/search?staff_id=${staff.id}`);
+    // Axios automatically parses JSON, so just send staff_id as query param.
+    const response = await axios.get(apiUrl(`/api/complaints/search?staff_id=${staff.id}`));
 
     const data = response.data;
 
@@ -76,24 +167,13 @@ const AssignStaffPage = () => {
       return;
     }
 
-    // ✅ Count complaints by status
-    const resolvedCount = data.filter((c) => c.status === "Resolved").length;
-    const inProgressCount = data.filter((c) => c.status === "IN_PROGRESS").length;
-    const pendingCount = data.filter((c) => c.status === "Pending").length;
-
-    // ✅ Update selected staff to show modal
     setSelectedStaff({
       ...staff,
-      performance: {
-        Resolved: resolvedCount,
-        "In Progress": inProgressCount,
-        Pending: pendingCount,
-      },
+      performance: buildStaffAudit(data),
     });
-    console.log(resolvedCount);
-    console.log(inProgressCount);
   } catch (err) {
     console.error("Error fetching performance:", err);
+    setErrorMessage("Unable to load staff performance right now.");
   }
 };
 
@@ -104,31 +184,38 @@ const AssignStaffPage = () => {
   };*/}
 
   return (
-    <div className="min-h-screen bg-[#FCF5EE] p-6">
-      <div className="fixed top-0 left-0 w-full h-24 flex items-center justify-between px-8 bg-white shadow-md z-50">
+    <div className="app-shell min-h-screen p-6">
+      <div className="premium-nav fixed top-0 left-0 w-full h-24 flex items-center justify-between px-8 z-50">
         <Logo />
         <div className="flex items-center gap-4">
           <div className="text-right">
             <p className="text-sm text-gray-600">Logged in as</p>
             <p className="font-semibold text-gray-800">Admin</p>
           </div>
-          <button className="rounded-full bg-[#d55d1f] hover:bg-[#b54a16] text-white px-5 py-2" onClick={() => navigate("/admin-dashboard")}>
+          <button className="btn-primary" onClick={() => navigate("/admin-dashboard")}>
             Back
           </button>
         </div>
       </div>
-      <h2 className="pt-28 text-4xl font-bold mb-6 text-center">Assign Complaint #{complaint?.id}</h2>
+      <h2 className="pt-28 text-4xl font-bold mb-6 text-center">Assign Grievance #{complaint?.id}</h2>
+      {errorMessage && (
+        <div className="mx-auto mb-6 max-w-3xl rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-medium text-red-800 shadow-sm">
+          {errorMessage}
+        </div>
+      )}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {staffList.length > 0 ? (
+        {isLoadingStaff ? (
+          <div className="empty-state sm:col-span-2 lg:col-span-3">Loading staff members...</div>
+        ) : staffList.length > 0 ? (
           staffList.map((s) => (
-            <div key={s.id} className="bg-white rounded-2xl shadow-lg p-6 flex flex-col justify-between hover:shadow-2xl transition">
+            <div key={s.id} className="premium-card p-6 flex flex-col justify-between">
               <div>
-                <h3 className="text-xl font-semibold text-orange-600">{s.name}</h3>
+                <h3 className="text-xl font-semibold text-teal-900">{s.name}</h3>
                 <p className="text-gray-600 mb-3">{s.email}</p>
               </div>
               <div className="flex gap-2 mt-4">
                 <button
-  className="px-3 py-1.5 bg-orange-500 text-white rounded-lg text-sm hover:bg-orange-600 transition flex-1"
+  className="btn-primary px-3 py-1.5 text-sm flex-1 justify-center"
   onClick={() => {
     setStaffToAssign(s);
     setPriorityModalOpen(true);
@@ -138,45 +225,54 @@ const AssignStaffPage = () => {
 </button>
 
                 <button
-                  className="px-3 py-1.5 bg-yellow-500 text-white rounded-lg text-sm hover:bg-yellow-600 transition flex-1"
+                  className="btn-secondary px-3 py-1.5 text-sm flex-1 justify-center"
                   onClick={() => fetchStaffPerformance(s)}
                 >
-                  Performance
+                  Audit Metrics
                 </button>
               </div>
             </div>
           ))
         ) : (
-          <tr>
-            <td colSpan="5" className="text-center p-4 text-gray-500">
-              No Staff found.
-            </td>
-          </tr>
+          <div className="empty-state sm:col-span-2 lg:col-span-3">No staff members found.</div>
         )}
       </div>
 
       {/* Performance Modal */}
       {selectedStaff && (
         <Modal
-          title={`${selectedStaff.name} - Performance`}
+          title={`${selectedStaff.name} - Performance Audit`}
           onClose={() => setSelectedStaff(null)}
         >
-          <div style={{ width: "100%", height: 300 }}>
+          <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-5">
+            {[
+              ["Score", `${selectedStaff.performance.score}/100`],
+              ["Confidence", `${selectedStaff.performance.confidence}%`],
+              ["Assigned", selectedStaff.performance.assigned],
+              ["Resolved", selectedStaff.performance.resolved],
+              ["Avg Time", `${selectedStaff.performance.averageResolutionHours} hr`],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-center">
+                <div className="text-xl font-extrabold text-teal-900">{value}</div>
+                <div className="mt-1 text-[11px] font-bold uppercase tracking-wide text-slate-500">{label}</div>
+              </div>
+            ))}
+          </div>
+          <p className="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+            Assignment audit is weighted by priority, SLA adherence, documentation completeness, efficiency, and consistency.
+          </p>
+          <div style={{ width: "100%", height: 320 }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={[
-                  { status: "Resolved", count: selectedStaff.performance.Resolved },
-                  { status: "In Progress", count: selectedStaff.performance["In Progress"] },
-                  { status: "Pending", count: selectedStaff.performance.Pending },
-                ]}
+                data={selectedStaff.performance.metrics}
                 layout="vertical"
                 margin={{ top: 20, right: 30, left: 40, bottom: 20 }}
               >
                 <XAxis type="number" />
-                <YAxis dataKey="status" type="category" />
+                <YAxis dataKey="name" type="category" width={118} />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="count" fill="#f97316" barSize={25} />
+                <Bar dataKey="score" name="KPI Score" fill="#0f4c45" barSize={24} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -185,8 +281,9 @@ const AssignStaffPage = () => {
 
       {priorityModalOpen && staffToAssign && (
   <Modal
-    title={`Assign Complaint #${complaint?.id} to ${staffToAssign.name}`}
+    title={`Assign Grievance #${complaint?.id} to ${staffToAssign.name}`}
     onClose={() => setPriorityModalOpen(false)}
+    showFooterClose={false}
   >
     <div className="space-y-4">
       <label className="block font-semibold">Select Priority:</label>
@@ -202,25 +299,37 @@ const AssignStaffPage = () => {
 
       <div className="flex justify-end gap-3 mt-4">
         <button
-          className="px-6 py-3 bg-gray-200 rounded-xl"
+          className="btn-muted px-5 py-2.5"
           onClick={() => setPriorityModalOpen(false)}
+          disabled={isAssigning}
         >
           Cancel
         </button>
         <button
-          className="px-6 py-3 bg-orange-600 text-white rounded-xl"
-          onClick={() => {
-            axios.put(`http://localhost:5000/api/complaints/status/${complaint.id}`, {
-              status: "In Progress",
+          className="btn-primary px-5 py-2.5"
+          disabled={isAssigning}
+          onClick={async () => {
+            try {
+              setIsAssigning(true);
+              setErrorMessage("");
+              await axios.put(apiUrl(`/api/complaints/status/${complaint.id}`), {
+              status: "IN_PROGRESS",
               staffId: staffToAssign.id,
               priority: selectedPriority
-            }).then(() => {
+            }, {
+              headers: authHeaders(),
+            });
               setPriorityModalOpen(false);
               navigate("/admin-dashboard");
-            }).catch(err => console.error(err));
+            } catch (err) {
+              console.error(err);
+              setErrorMessage(err.response?.data?.message || "Unable to assign this complaint. Please try again.");
+            } finally {
+              setIsAssigning(false);
+            }
           }}
         >
-          Assign
+          {isAssigning ? "Assigning..." : "Assign"}
         </button>
       </div>
     </div>
@@ -234,14 +343,16 @@ const AssignStaffPage = () => {
 
 
 // Modal component
-const Modal = ({ title, children, onClose }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
-    <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl p-6" onClick={(e) => e.stopPropagation()}>
-      <h3 className="text-2xl font-bold text-orange-600 mb-4">{title}</h3>
+const Modal = ({ title, children, onClose, showFooterClose = true }) => (
+  <div className="modal-backdrop" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="assign-modal-title">
+    <div className="modal-shell max-h-[88vh] w-full max-w-2xl overflow-y-auto overscroll-contain p-6" onClick={(e) => e.stopPropagation()}>
+      <h3 id="assign-modal-title" className="text-2xl font-bold text-teal-900 mb-4">{title}</h3>
       {children}
-      <div className="flex justify-end mt-4">
-        <button className="px-4 py-2 bg-gray-200 rounded-lg" onClick={onClose}>Close</button>
-      </div>
+      {showFooterClose && (
+        <div className="flex justify-end mt-4">
+          <button className="btn-muted px-5 py-2.5" onClick={onClose}>Close</button>
+        </div>
+      )}
     </div>
   </div>
 

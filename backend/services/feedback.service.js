@@ -48,5 +48,12 @@ export const getFeedbacksFromDB = async () => {
 };
 
 export const getFeedbacksForComplaintFromDB = async (complaint_id) => {
-  return feedbacks.filter((f) => f.complaint_id === complaint_id);
+  const result = await pool.query(
+    `SELECT f.feedback_id, f.rating, f.comment, f.user_id, u.name AS name
+     FROM feedbacks f
+     JOIN users u ON f.user_id = u.user_id
+     WHERE f.complaint_id = $1`,
+    [complaint_id]
+  );
+  return result.rows;
 };

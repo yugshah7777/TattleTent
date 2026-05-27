@@ -10,15 +10,21 @@ import {
 // ✅ Create Feedback
 const createFeedback = asynchandler(async (req, res) => {
   const { complaint_id, rating, comment } = req.body;
+  const numericRating = Number(rating);
 
-  console.log(req.body);
-  if (!complaint_id) {
+  if (!complaint_id || !Number.isInteger(numericRating) || numericRating < 1 || numericRating > 5) {
     return res
       .status(400)
-      .json(new ApiResponse(400, "Complaint ID and rating are required"));
+      .json(new ApiResponse(400, "Complaint ID and a 1-5 rating are required"));
   }
 
-  const feedback = await saveFeedbackToDB({ complaint_id, rating, comment });
+  if (!comment || !comment.trim()) {
+    return res
+      .status(400)
+      .json(new ApiResponse(400, "Feedback comment is required"));
+  }
+
+  const feedback = await saveFeedbackToDB({ complaint_id, rating: numericRating, comment: comment.trim() });
 
   return res
     .status(201)

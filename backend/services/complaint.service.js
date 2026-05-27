@@ -25,13 +25,18 @@ export const saveComplaintToDB = async (newComplaint) => {
 
     const dept_id = deptResult.rows[0].dept_id;
 
-    const maxEscalations = getMaxEscalations(newComplaint.priority||"Low");
-
     // 2️⃣ Insert complaint into the database with default values
     const complaintResult = await pool.query(
       `INSERT INTO complaints 
         (title, description, status, photo, category, location, dept_id, priority, user_id, longitude, latitude, geolocation)
-       VALUES ($1, $2, 'New', $3, $4, $5, $6, 'Low', $7, $8, $9, ST_SetSRID(ST_MakePoint($10::double precision, $11::double precision), 4326))
+       VALUES (
+        $1, $2, 'New', $3, $4, $5, $6, $7, $8, $9, $10,
+        CASE
+          WHEN $9 IS NOT NULL AND $10 IS NOT NULL
+          THEN ST_SetSRID(ST_MakePoint($9::double precision, $10::double precision), 4326)
+          ELSE NULL
+        END
+       )
        RETURNING complaint_id, title, description, category, dept_id, priority, status, location, photo, submitted_at`,
       [
         newComplaint.title,
@@ -40,9 +45,8 @@ export const saveComplaintToDB = async (newComplaint) => {
         newComplaint.category,
         newComplaint.location,
         dept_id,
+        newComplaint.priority || "Low",
         newComplaint.user_id,
-        newComplaint.longitude,
-        newComplaint.latitude,
         newComplaint.longitude,
         newComplaint.latitude,
       ]
@@ -82,29 +86,39 @@ export const updateComplaintStatusInDB = async (id, newStatus, staffId, priority
     }
     let updatedComplaint;
     if(newStatus==='Resolved') {
-      const points = await pool.query(`
-          SELECT points
-          FROM users
-          WHERE user_id=$1;
-        `, [staffId]);
+      const complaintResult = await pool.query(
+        `SELECT staff_id, temp_points FROM complaints WHERE complaint_id = $1`,
+        [id]
+      );
 
-      const temp_points = await pool.query(`
-          SELECT temp_points
-          FROM complaints
-          WHERE complaint_id=$1;
-        `, [id]);
+      if (complaintResult.rowCount === 0) return null;
 
-        updatedComplaint = await pool.query(`
-          UPDATE users
-          SET points=$1,
-          WHERE user_id=$2
-          RETURNING complaint_id, title, description, photo, location, category, status, priority, sla_deadline, updated_at
-        `,[points+temp_points,c.staff_id]);
+      const complaint = complaintResult.rows[0];
+      const assignedStaffId = staffId || complaint.staff_id;
+
+      if (assignedStaffId) {
+        await pool.query(
+          `UPDATE users
+           SET points = COALESCE(points, 0) + COALESCE($1, 0)
+           WHERE user_id = $2`,
+          [complaint.temp_points, assignedStaffId]
+        );
+      }
+
+      updatedComplaint = await pool.query(
+        `UPDATE complaints
+         SET status = $1,
+             priority = COALESCE($2, priority),
+             updated_at = NOW()
+         WHERE complaint_id = $3
+         RETURNING complaint_id, title, description, photo, location, category, status, priority, sla_deadline, updated_at`,
+        [newStatus, priority, id]
+      );
     } else {
       updatedComplaint = await pool.query(
         `UPDATE complaints
         SET status = $1,
-            priority = $2,
+            priority = COALESCE($2, priority),
             updated_at = NOW()
         WHERE complaint_id = $3
         RETURNING complaint_id, title, description, photo, location, category, status, priority, sla_deadline, updated_at`,
@@ -345,7 +359,7 @@ export const escalateComplaintsByCategory = async () => {
     const overdue = await pool.query(`
       SELECT complaint_id, title, priority, status, staff_id,temp_points,dept_id
       FROM complaints
-      WHERE status IN ('NEW', 'IN_PROGRESS')
+      WHERE status IN ('New', 'IN_PROGRESS')
       AND sla_deadline < NOW();
     `);
 
@@ -385,21 +399,17 @@ export const escalateComplaintsByCategory = async () => {
       escalatedComplaints.push({ complaint_id: c.complaint_id });
       }
       else{
-        const points = await pool.query(`
-          SELECT points
-          FROM users
-          WHERE user_id=$1; 
-          `,[c.staff_id]);
-
-        await pool.query(`
+        if (c.staff_id) {
+          await pool.query(`
             UPDATE users
-            SET points=$1
-            WHERE user_id=$2;    
-        `,[points,c.staff_id]);
+            SET points = GREATEST(COALESCE(points, 0) - 1, 0)
+            WHERE user_id = $1;
+          `,[c.staff_id]);
+        }
 
         await pool.query(`
             UPDATE complaints
-            SET status='NEW',
+            SET status='New',
               updated_at=NOW(),
               staff_id=NULL,
               assigned_to=NULL,
