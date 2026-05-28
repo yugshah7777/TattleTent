@@ -4,7 +4,7 @@ import Nat64 "mo:base/Nat64";
 import Text "mo:base/Text";
 import Time "mo:base/Time";
 
-actor AuditLedger {
+persistent actor AuditLedger {
   public type AuditAction = {
     #COMPLAINT_CREATED;
     #STATUS_UPDATED;
@@ -18,7 +18,7 @@ actor AuditLedger {
   public type AuditEventInput = {
     complaintId : Text;
     action : AuditAction;
-    actor : Text;
+    performedBy : Text;
     oldValue : ?Text;
     newValue : ?Text;
     department : ?Text;
@@ -30,7 +30,7 @@ actor AuditLedger {
     eventId : Nat64;
     complaintId : Text;
     action : AuditAction;
-    actor : Text;
+    performedBy : Text;
     oldValue : ?Text;
     newValue : ?Text;
     department : ?Text;
@@ -63,12 +63,7 @@ actor AuditLedger {
   stable var verificationRecords : [VerificationRecord] = [];
 
   private func nowNanosAsNat64() : Nat64 {
-    let now = Time.now();
-    if (now <= 0) {
-      return 0;
-    };
-
-    Nat64.fromNat(Int.abs(now));
+    Nat64.fromIntWrap(Time.now());
   };
 
   public shared func addAuditEvent(input : AuditEventInput) : async AuditEvent {
@@ -76,7 +71,7 @@ actor AuditLedger {
       eventId = nextEventId;
       complaintId = input.complaintId;
       action = input.action;
-      actor = input.actor;
+      performedBy = input.performedBy;
       oldValue = input.oldValue;
       newValue = input.newValue;
       department = input.department;
