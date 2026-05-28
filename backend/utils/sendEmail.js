@@ -53,7 +53,7 @@ const sendEmail = async (options) => {
 
       sender: {
         name: "CivicLedger Notifications",
-        email: "limitsundefined7777@gmail.com"
+        email: "rakeshshahh427@gmail.com"
       },
 
       to: [
