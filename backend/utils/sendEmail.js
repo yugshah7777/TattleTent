@@ -53,7 +53,7 @@ const sendEmail = async (options) => {
 
       sender: {
         name: "CivicLedger",
-        email: "yugshah7777@gmail.com"
+        email: "limitsundefined7777@gmail.com"
       },
 
       to: [
