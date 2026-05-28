@@ -13,7 +13,7 @@
 //     });
 
 //     const mailOptions = {
-//       from: `Government of India Public Grievance Portal <${process.env.EMAIL_USER}>`,
+//       from: `CivicLedger <${process.env.EMAIL_USER}>`,
 //       to: options.email,
 //       subject: options.subject,
 //       html: options.html,
@@ -31,62 +31,53 @@
 // export default sendEmail;
 
 
-// using PostMark
-import postmark from "postmark";
 
-const client = new postmark.ServerClient(
-  process.env.POSTMARK_SERVER_TOKEN
-);
+// Brevo
+import SibApiV3Sdk from "sib-api-v3-sdk";
+
+const client = SibApiV3Sdk.ApiClient.instance;
+
+client.authentications["api-key"].apiKey =
+  process.env.BREVO_API_KEY;
+
+const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
 
 const sendEmail = async (options) => {
-
   try {
 
-    console.log("========== POSTMARK DEBUG ==========");
-
+    console.log("===== BREVO EMAIL DEBUG =====");
     console.log("TO:", options.email);
-
     console.log("SUBJECT:", options.subject);
 
-    const response = await client.sendEmail({
+    const result = await apiInstance.sendTransacEmail({
 
-      From:
-        "CivicLedger Notifications <shah.20243255@mnnit.ac.in>",
+      sender: {
+        name: "CivicLedger",
+        email: "yugshah7777@gmail.com"
+      },
 
-      To:
-        options.email,
+      to: [
+        {
+          email: options.email
+        }
+      ],
 
-      Subject:
-        options.subject,
+      subject: options.subject,
 
-      HtmlBody:
-        options.html,
-
-      TextBody:
-        options.text ||
-        "Open this email in HTML mode.",
-
-      MessageStream:
-        "outbound"
+      htmlContent: options.html,
 
     });
 
-    console.log(
-      "POSTMARK SUCCESS:",
-      response
-    );
+    console.log("BREVO SUCCESS:", result);
 
-    return response;
+    return result;
 
   } catch (error) {
 
-    console.error(
-      "POSTMARK FAILURE:"
-    );
-
-    console.error(error);
+    console.error("BREVO FAILURE:", error);
 
     throw new Error(
+      error.response?.body?.message ||
       error.message ||
       "Email sending failed"
     );
