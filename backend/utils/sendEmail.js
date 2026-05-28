@@ -31,109 +31,62 @@
 // export default sendEmail;
 
 
-// using Resend email instead of SMTP of Gmail (1 verified send user only - for testing)
-// import { Resend } from "resend";
+// using PostMark
+import postmark from "postmark";
 
-// const resend = new Resend(
-//   process.env.RESEND_API_KEY
-// );
-
-// const sendEmail = async (options) => {
-
-//   try {
-
-//     if (!options?.email) {
-//       throw new Error(
-//         "Recipient email required"
-//       );
-//     }
-
-//     const response =
-//       await resend.emails.send({
-
-//         from:
-//           process.env.EMAIL_FROM ||
-//           "onboarding@resend.dev",
-
-//         to: options.email,
-
-//         subject: options.subject,
-
-//         html: options.html,
-
-//       });
-
-//     console.log(
-//       "EMAIL SENT:",
-//       response
-//     );
-
-//     return response;
-
-//   }
-//   catch(error){
-
-//     console.error(
-//       "EMAIL ERROR:",
-//       error
-//     );
-
-//     throw new Error(
-//       error.message ||
-//       "Email send failed"
-//     );
-//   }
-// };
-// export default sendEmail;
-
-
-
-// Brevo
-import SibApiV3Sdk from "sib-api-v3-sdk";
-
-const client = SibApiV3Sdk.ApiClient.instance;
-
-client.authentications["api-key"].apiKey =
-  process.env.BREVO_API_KEY;
-
-const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+const client = new postmark.ServerClient(
+  process.env.POSTMARK_SERVER_TOKEN
+);
 
 const sendEmail = async (options) => {
+
   try {
 
-    console.log("===== BREVO EMAIL DEBUG =====");
+    console.log("========== POSTMARK DEBUG ==========");
+
     console.log("TO:", options.email);
+
     console.log("SUBJECT:", options.subject);
 
-    const result = await apiInstance.sendTransacEmail({
+    const response = await client.sendEmail({
 
-      sender: {
-        name: "CivicLedger",
-        email: "yugshah7777@gmail.com"
-      },
+      From:
+        "CivicLedger Notifications <yugshah7777@gmail.com>",
 
-      to: [
-        {
-          email: options.email
-        }
-      ],
+      To:
+        options.email,
 
-      subject: options.subject,
+      Subject:
+        options.subject,
 
-      htmlContent: options.html,
+      HtmlBody:
+        options.html,
+
+      TextBody:
+        options.text ||
+        "Open this email in HTML mode.",
+
+      MessageStream:
+        "outbound"
 
     });
 
-    console.log("BREVO SUCCESS:", result);
+    console.log(
+      "POSTMARK SUCCESS:",
+      response
+    );
 
-    return result;
+    return response;
 
   } catch (error) {
 
-    console.error("BREVO FAILURE:", error);
+    console.error(
+      "POSTMARK FAILURE:"
+    );
+
+    console.error(error);
 
     throw new Error(
-      error.response?.body?.message ||
       error.message ||
       "Email sending failed"
     );
