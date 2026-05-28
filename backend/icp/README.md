@@ -8,7 +8,7 @@ Only governance proofs and lifecycle audit metadata are written to chain.
 
 - `complaintId`
 - `action`
-- `actor`
+- `performedBy`
 - `oldValue` (optional)
 - `newValue` (optional)
 - `department` (optional)

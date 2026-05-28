@@ -12,7 +12,7 @@ export const idlFactory = ({ IDL }) => {
   const AuditEventInput = IDL.Record({
     complaintId: IDL.Text,
     action: AuditAction,
-    actor: IDL.Text,
+    performedBy: IDL.Text,
     oldValue: IDL.Opt(IDL.Text),
     newValue: IDL.Opt(IDL.Text),
     department: IDL.Opt(IDL.Text),
@@ -24,7 +24,7 @@ export const idlFactory = ({ IDL }) => {
     eventId: IDL.Nat64,
     complaintId: IDL.Text,
     action: AuditAction,
-    actor: IDL.Text,
+    performedBy: IDL.Text,
     oldValue: IDL.Opt(IDL.Text),
     newValue: IDL.Opt(IDL.Text),
     department: IDL.Opt(IDL.Text),

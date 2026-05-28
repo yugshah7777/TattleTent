@@ -425,7 +425,7 @@ export const escalateComplaintsByCategory = async () => {
       queueAuditEvent({
         complaintId: c.complaint_id,
         action: "SLA_ESCALATION_TRIGGERED",
-        actor: "SYSTEM_ESCALATION_JOB",
+        performedBy: "SYSTEM_ESCALATION_JOB",
         oldValue: previousPriority,
         newValue: c.priority === "Low" ? "Medium" : "High",
         department: String(c.dept_id),
@@ -460,7 +460,7 @@ export const escalateComplaintsByCategory = async () => {
         queueAuditEvent({
           complaintId: c.complaint_id,
           action: "SLA_ESCALATION_TRIGGERED",
-          actor: "SYSTEM_ESCALATION_JOB",
+          performedBy: "SYSTEM_ESCALATION_JOB",
           oldValue: previousStatus,
           newValue: "New",
           department: String(c.dept_id),

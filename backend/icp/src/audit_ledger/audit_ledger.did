@@ -11,7 +11,7 @@ type AuditAction = variant {
 type AuditEventInput = record {
   complaintId : text;
   action : AuditAction;
-  actor : text;
+  performedBy : text;
   oldValue : opt text;
   newValue : opt text;
   department : opt text;
@@ -23,7 +23,7 @@ type AuditEvent = record {
   eventId : nat64;
   complaintId : text;
   action : AuditAction;
-  actor : text;
+  performedBy : text;
   oldValue : opt text;
   newValue : opt text;
   department : opt text;

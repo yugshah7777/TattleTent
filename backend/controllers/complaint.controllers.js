@@ -71,7 +71,7 @@ const createComplaint = asynchandler(async (req, res) => {
     queueAuditEvent({
       complaintId: savedComplaint.complaint_id,
       action: "COMPLAINT_CREATED",
-      actor: `USER_${user_id}`,
+      performedBy: `USER_${user_id}`,
       oldValue: null,
       newValue: savedComplaint.status,
       department: category,
@@ -139,7 +139,7 @@ const updateComplaintStatus = asynchandler(async (req, res) => {
   queueAuditEvent({
     complaintId,
     action: "STATUS_UPDATED",
-    actor: actorId,
+    performedBy: actorId,
     oldValue: oldStatus,
     newValue: newStatus,
     department: beforeUpdate?.department || null,
@@ -151,7 +151,7 @@ const updateComplaintStatus = asynchandler(async (req, res) => {
     queueAuditEvent({
       complaintId,
       action: "DEPARTMENT_ASSIGNED",
-      actor: actorId,
+      performedBy: actorId,
       oldValue: beforeUpdate?.assigned_to || null,
       newValue: String(staffId),
       department: beforeUpdate?.department || null,
@@ -164,7 +164,7 @@ const updateComplaintStatus = asynchandler(async (req, res) => {
     queueAuditEvent({
       complaintId,
       action: "RESOLUTION_SUBMITTED",
-      actor: actorId,
+      performedBy: actorId,
       oldValue: oldStatus,
       newValue: newStatus,
       department: beforeUpdate?.department || null,
@@ -177,7 +177,7 @@ const updateComplaintStatus = asynchandler(async (req, res) => {
     queueAuditEvent({
       complaintId,
       action: "COMPLAINT_CLOSED",
-      actor: actorId,
+      performedBy: actorId,
       oldValue: oldStatus,
       newValue: newStatus,
       department: beforeUpdate?.department || null,
@@ -190,7 +190,7 @@ const updateComplaintStatus = asynchandler(async (req, res) => {
     queueAuditEvent({
       complaintId,
       action: "COMPLAINT_REOPENED",
-      actor: actorId,
+      performedBy: actorId,
       oldValue: oldStatus,
       newValue: newStatus,
       department: beforeUpdate?.department || null,
