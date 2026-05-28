@@ -51,7 +51,7 @@ const sendEmail = async (options) => {
     const response = await client.sendEmail({
 
       From:
-        "CivicLedger Notifications <yugshah7777@gmail.com>",
+        "CivicLedger Notifications <shah.20243255@mnnit.ac.in>",
 
       To:
         options.email,
