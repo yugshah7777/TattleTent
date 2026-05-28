@@ -1,15 +1,31 @@
 import nodemailer from 'nodemailer';
 
+const transporter = nodemailer.createTransport({
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false,
+  requireTLS: true,
+
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+
+  tls: {
+    rejectUnauthorized: false,
+  },
+});
+
+transporter.verify((err, success) => {
+  if (err) {
+    console.error('SMTP VERIFY ERROR:', err);
+  } else {
+    console.log('SMTP READY');
+  }
+});
+
 const sendEmail = async (options) => {
   try {
-    // Transporter
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
 
     const mailOptions = {
       from: `Government of India Public Grievance Portal <${process.env.EMAIL_USER}>`,
@@ -19,11 +35,16 @@ const sendEmail = async (options) => {
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log('Message sent: %s', info.messageId);
+
+    console.log('EMAIL SENT:', info.messageId);
+
+    return info;
 
   } catch (error) {
-    console.error('Error sending email:', error);
-    throw new Error('Email could not be sent.');
+
+    console.error('FULL EMAIL ERROR:', error);
+
+    throw error;
   }
 };
 
