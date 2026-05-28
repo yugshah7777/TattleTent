@@ -31,56 +31,111 @@
 // export default sendEmail;
 
 
-// using Resend email instead of SMTP of Gmail
-import { Resend } from "resend";
+// using Resend email instead of SMTP of Gmail (1 verified send user only - for testing)
+// import { Resend } from "resend";
 
-const resend = new Resend(
-  process.env.RESEND_API_KEY
-);
+// const resend = new Resend(
+//   process.env.RESEND_API_KEY
+// );
+
+// const sendEmail = async (options) => {
+
+//   try {
+
+//     if (!options?.email) {
+//       throw new Error(
+//         "Recipient email required"
+//       );
+//     }
+
+//     const response =
+//       await resend.emails.send({
+
+//         from:
+//           process.env.EMAIL_FROM ||
+//           "onboarding@resend.dev",
+
+//         to: options.email,
+
+//         subject: options.subject,
+
+//         html: options.html,
+
+//       });
+
+//     console.log(
+//       "EMAIL SENT:",
+//       response
+//     );
+
+//     return response;
+
+//   }
+//   catch(error){
+
+//     console.error(
+//       "EMAIL ERROR:",
+//       error
+//     );
+
+//     throw new Error(
+//       error.message ||
+//       "Email send failed"
+//     );
+//   }
+// };
+// export default sendEmail;
+
+
+
+// Brevo
+import SibApiV3Sdk from "sib-api-v3-sdk";
+
+const client = SibApiV3Sdk.ApiClient.instance;
+
+client.authentications["api-key"].apiKey =
+  process.env.BREVO_API_KEY;
+
+const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
 
 const sendEmail = async (options) => {
-
   try {
 
-    if (!options?.email) {
-      throw new Error(
-        "Recipient email required"
-      );
-    }
+    console.log("===== BREVO EMAIL DEBUG =====");
+    console.log("TO:", options.email);
+    console.log("SUBJECT:", options.subject);
 
-    const response =
-      await resend.emails.send({
+    const result = await apiInstance.sendTransacEmail({
 
-        from:
-          process.env.EMAIL_FROM ||
-          "onboarding@resend.dev",
+      sender: {
+        name: "CivicLedger",
+        email: "yugshah7777@gmail.com"
+      },
 
-        to: options.email,
+      to: [
+        {
+          email: options.email
+        }
+      ],
 
-        subject: options.subject,
+      subject: options.subject,
 
-        html: options.html,
+      htmlContent: options.html,
 
-      });
+    });
 
-    console.log(
-      "EMAIL SENT:",
-      response
-    );
+    console.log("BREVO SUCCESS:", result);
 
-    return response;
+    return result;
 
-  }
-  catch(error){
+  } catch (error) {
 
-    console.error(
-      "EMAIL ERROR:",
-      error
-    );
+    console.error("BREVO FAILURE:", error);
 
     throw new Error(
+      error.response?.body?.message ||
       error.message ||
-      "Email send failed"
+      "Email sending failed"
     );
   }
 };
