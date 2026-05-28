@@ -1,5 +1,6 @@
 import pool from "../db/db.js";
 import sendEmail from "../utils/sendEmail.js";
+import { EMAIL_BRAND_NAME, getEmailFooter } from "../utils/email.config.js";
 
 
 /**
@@ -26,8 +27,7 @@ export const notifyStatusChange = async (complaintId) => {
       // Check if the status is resolved to include the special link
     if (c.status === 'Resolved') {
       feedbackContent = `
-        <p>The Government of India Public Grievance Portal is pleased to inform you that your grievance is now fully resolved.</p>
-        <p>To help us improve our service, please take a moment to provide feedback on your experience:</p>
+        <p>Your complaint has been resolved. Please take a moment to provide feedback on your experience:</p>
         <p style="text-align: center; margin: 20px 0;">
             <a href="${FEEDBACK_URL}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-align: center; text-decoration: none; display: inline-block; border-radius: 5px;">
                 Leave Feedback Now
@@ -39,24 +39,22 @@ export const notifyStatusChange = async (complaintId) => {
     // 🧠 Email to citizen
     await sendEmail({
         email: c.citizen_email,
-        subject: `Update on Grievance #${c.complaint_id}: Status is now "${c.status}"`,
+        subject: `Complaint Update #${c.complaint_id} — ${EMAIL_BRAND_NAME}`,
         html: `
-            <h2>Grievance Status Updated</h2>
+            <h2>Complaint Status Update</h2>
             <p>Hello,</p>
-            <p>This is a notification that the status of your grievance has been changed.</p>
+            <p>Your complaint status has been updated.</p>
             
-            <p><b>Grievance Title:</b> ${c.title}</p>
-            <p><b>Reference ID:</b> #${c.complaint_id}</p>
+            <p><b>Title:</b> ${c.title}</p>
+            <p><b>Complaint ID:</b> #${c.complaint_id}</p>
             <p><b>New Status:</b> <span style="font-weight: bold; color: #007bff;">${c.status}</span></p>
 
             <!-- Conditional content inserted here -->
             ${feedbackContent}
             <!-- End conditional content -->
 
-            <p>You can view full details and track progress from your public grievance dashboard.</p>
-            <br/>
-            <p>Regards,</p>
-            <p>Government of India Public Grievance Portal</p>
+            <p>You can view full details through your ${EMAIL_BRAND_NAME} dashboard.</p>
+            ${getEmailFooter()}
         `,
     });
 
@@ -98,7 +96,7 @@ export const notifyOverdueReminder = async () => {
 
       await sendEmail({
         email: c.staff_email,
-        subject: `⏰ SLA Reminder: Complaint #${c.complaint_id} due soon`,
+        subject: `SLA Reminder: Complaint #${c.complaint_id} — ${EMAIL_BRAND_NAME}`,
         html: `
           <h2>SLA Deadline Approaching</h2>
           <p>Complaint "<b>${c.title}</b>" assigned to you is due in <b>${hoursLeft} hours</b>.</p>
@@ -107,6 +105,7 @@ export const notifyOverdueReminder = async () => {
           <p><b>Deadline:</b> ${new Date(c.sla_deadline).toLocaleString()}</p>
           <br/>
           <p>Please resolve it before the SLA deadline to avoid escalation.</p>
+          ${getEmailFooter()}
         `,
       });
 
@@ -130,11 +129,12 @@ export const notifyAdminForManualReassignment = async (complaintId) => {
   for (const email of emails) {
     await sendEmail({
       email,
-      subject: `⚠️ Complaint #${complaintId} Escalation Limit Reached`,
+      subject: `Escalation Notice: Complaint #${complaintId} — ${EMAIL_BRAND_NAME}`,
       html: `
         <h2>Manual Reassignment Required</h2>
         <p>Complaint "<b>${complaint.rows[0].title}</b>" (Priority: ${complaint.rows[0].priority}) has reached its maximum escalation limit.</p>
         <p>Please review and assign a new staff member manually.</p>
+        ${getEmailFooter()}
       `,
     });
   }

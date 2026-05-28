@@ -52,7 +52,7 @@ const sendEmail = async (options) => {
     const result = await apiInstance.sendTransacEmail({
 
       sender: {
-        name: "CivicLedger",
+        name: "CivicLedger Notifications",
         email: "limitsundefined7777@gmail.com"
       },
 

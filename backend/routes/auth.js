@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import passport from 'passport';
 import generateToken from '../utils/generateToken.js';
 import sendEmail from '../utils/sendEmail.js';
+import { EMAIL_BRAND_NAME, getEmailFooter } from '../utils/email.config.js';
 import { protect, adminOnly } from '../middlewares/authMiddleware.js';
 
 const router = Router();
@@ -60,8 +61,8 @@ router.post('/send-otp', async (req, res) => {
 
     await sendEmail({
       email: email,
-      subject: 'Your Verification Code',
-      html: `<h1>Your Government of India Public Grievance Portal verification code is: ${otp}</h1><p>This code will expire in 5 minutes.</p>`,
+      subject: `Your Verification Code — ${EMAIL_BRAND_NAME}`,
+      html: `<h2>Email Verification</h2><p>Your ${EMAIL_BRAND_NAME} verification code is:</p><h3>${otp}</h3><p>This code expires in 5 minutes.</p><p>If you did not request this action, you may ignore this email.</p>${getEmailFooter()}`,
     });
 
     res.status(200).json({ message: 'OTP has been sent to your email.' });
@@ -157,12 +158,13 @@ router.post('/admin/create-staff', protect, adminOnly, async (req, res) => {
 
         await sendEmail({
           email: staff.email,
-          subject: 'Your Department Officer Account',
+          subject: `Staff Account Update — ${EMAIL_BRAND_NAME}`,
           html: `
-            <h2>Welcome to the Government of India Public Grievance Portal</h2>
+            <h2>Staff Account Update</h2>
             <p>Dear ${staff.name},</p>
-            <p>Your role has been upgraded to Staff. Please log in using your existing account credentials.</p>
+            <p>Your account has been upgraded to Staff. Please log in using your existing account credentials.</p>
             <p><b>Login here:</b> https://your-frontend-url.com/login</p>
+            ${getEmailFooter()}
           `,
         });
 
@@ -195,17 +197,18 @@ router.post('/admin/create-staff', protect, adminOnly, async (req, res) => {
     // 4️⃣  Send email to staff with login credentials
     await sendEmail({
       email,
-      subject: 'Your Department Officer Account',
+      subject: `Staff Account Created — ${EMAIL_BRAND_NAME}`,
       html: `
-        <h2>Welcome to the Government of India Public Grievance Portal</h2>
+        <h2>Staff Account Created</h2>
         <p>Dear ${name},</p>
-        <p>An account has been created for you by the portal administrator. Use the credentials below to log in:</p>
+        <p>An account has been created for you by the administrator. Use the credentials below to log in:</p>
         <ul>
           <li><b>Email:</b> ${email}</li>
           <li><b>Temporary Password:</b> ${tempPassword}</li>
         </ul>
         <p>For security reasons, you must change your password after your first login.</p>
         <p><b>Login here:</b> https://your-frontend-url.com/login</p>
+        ${getEmailFooter()}
       `,
     });
 
@@ -405,8 +408,8 @@ router.post('/send-reset-otp', async (req, res) => {
 
     await sendEmail({
       email,
-      subject: 'Your Password Reset Code',
-      html: `<h1>Your Government of India Public Grievance Portal password reset code is: ${otp}</h1><p>This code will expire in 5 minutes.</p>`,
+      subject: `Password Reset Code — ${EMAIL_BRAND_NAME}`,
+      html: `<h2>Password Reset</h2><p>Your ${EMAIL_BRAND_NAME} password reset code is:</p><h3>${otp}</h3><p>This code expires in 5 minutes.</p><p>If you did not request this action, you may ignore this email.</p>${getEmailFooter()}`,
     });
 
     res.status(200).json({ message: 'Password reset OTP has been sent to your email.' });
