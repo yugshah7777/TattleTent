@@ -31,55 +31,65 @@
 // export default sendEmail;
 
 
+// postmark
+import postmark from "postmark";
 
-// Brevo
-import SibApiV3Sdk from "sib-api-v3-sdk";
-
-const client = SibApiV3Sdk.ApiClient.instance;
-
-client.authentications["api-key"].apiKey =
-  process.env.BREVO_API_KEY;
-
-const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+const client = new postmark.ServerClient(
+  process.env.POSTMARK_SERVER_TOKEN
+);
 
 const sendEmail = async (options) => {
+
   try {
 
-    console.log("===== BREVO EMAIL DEBUG =====");
+    console.log("===== POSTMARK DEBUG =====");
+
     console.log("TO:", options.email);
+
     console.log("SUBJECT:", options.subject);
 
-    const result = await apiInstance.sendTransacEmail({
+    const response =
+      await client.sendEmail({
 
-      sender: {
-        name: "CivicLedger Notifications",
-        email: "rakeshshahh427@gmail.com"
-      },
+        From:
+          `CivicLedger Notifications <${process.env.POSTMARK_FROM_EMAIL}>`,
 
-      to: [
-        {
-          email: options.email
-        }
-      ],
+        To:
+          options.email,
 
-      subject: options.subject,
+        Subject:
+          options.subject,
 
-      htmlContent: options.html,
+        HtmlBody:
+          options.html,
 
-    });
+        TextBody:
+          options.text ||
+          "CivicLedger Notification",
 
-    console.log("BREVO SUCCESS:", result);
+        MessageStream:
+          "outbound"
 
-    return result;
+      });
 
-  } catch (error) {
+    console.log(
+      "POSTMARK SUCCESS:",
+      response
+    );
 
-    console.error("BREVO FAILURE:", error);
+    return response;
+
+  } catch(error){
+
+    console.error(
+      "POSTMARK FAILURE:"
+    );
+
+    console.error(error);
 
     throw new Error(
-      error.response?.body?.message ||
       error.message ||
-      "Email sending failed"
+      "Email send failed"
     );
   }
 };
