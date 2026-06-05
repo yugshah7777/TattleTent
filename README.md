@@ -1,6 +1,6 @@
-# 🏕️ TattleTent
+# 🏕️ CivicLedger
 
-**TattleTent** is a **full-stack grievance tracking and transparency platform** designed for a traveling circus city. Built as part of **Codesangam – Webster**, it streamlines citizen complaint handling, departmental accountability, and real-time monitoring.
+**CivicLedger** is a **full-stack grievance tracking and transparency platform** designed for a Government. Built as part of **Codesangam – Webster**, it streamlines citizen complaint handling, departmental accountability, and real-time monitoring.
 
 ---
 
